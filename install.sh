@@ -55,7 +55,7 @@ After=moonraker.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/bin/bash -c 'exec -a z_calibration sleep 1'
+ExecStart=/bin/bash -c 'exec -a timelapse sleep 1'
 ExecStopPost=/usr/sbin/service klipper restart
 TimeoutStopSec=1s
 [Install]
@@ -63,12 +63,14 @@ WantedBy=multi-user.target
 EOF
 # Use systemctl to enable the systemd service script
     sudo systemctl daemon-reload
-    sudo systemctl enable z_calibration.service
+    sudo systemctl enable timelapse.service
 }
 
-# Step 4: restarting Klipper
+
 restart_klipper()
 {
+	echo "Restarting Moonraker..."
+    sudo systemctl restart klipper
     echo "Restarting Klipper..."
     sudo systemctl restart klipper
 }
