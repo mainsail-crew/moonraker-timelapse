@@ -57,6 +57,7 @@ Type=oneshot
 RemainAfterExit=yes
 ExecStart=/bin/bash -c 'exec -a timelapse sleep 1'
 ExecStopPost=/usr/sbin/service klipper restart
+ExecStopPost=/usr/sbin/service moonraker restart
 TimeoutStopSec=1s
 [Install]
 WantedBy=multi-user.target
@@ -67,7 +68,7 @@ EOF
 }
 
 
-restart_klipper()
+restart_services()
 {
 	echo "Restarting Moonraker..."
     sudo systemctl restart klipper
@@ -93,12 +94,14 @@ SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/ && pwd )"
 # Parse command line arguments
 while getopts "k:" arg; do
     case $arg in
-        k) KLIPPER_PATH=$OPTARG;;
+        c) KLIPPER_CONFIG_PATH=$OPTARG;;
     esac
 done
 
 # Run steps
+check_klipper
+check_moonraker
 verify_ready
 link_extension
 install_script
-restart_klipper
+restart_services
