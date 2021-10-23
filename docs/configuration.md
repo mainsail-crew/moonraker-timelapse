@@ -217,7 +217,7 @@ add the ``TIMELAPSE_TAKE_FRAME`` macro to your slicer so that it is added to
 the Gcode before or after a layer change. If your slicer do not support adding
 Gcode to a layerchange you are limited to timebased "hyperlapse" mode.
 
-### Prusa Slicer
+### Prusa Slicer / Super Slicer
 Printer Settings -> Custom G-code -> Before layer change Gcode -> ``TIMELAPSE_TAKE_FRAME``
 
 ![PrusaSlicer Configuration](assets/img/timelapse-PS-config.png)
@@ -227,6 +227,15 @@ Extensions -> Post Processing -> Modify G-Code ->
 Add a script -> Insert at layer change -> G-code to insert = ``TIMELAPSE_TAKE_FRAME``
 
 ![Cura Configuration](assets/img/timelapse-cura-config.png)
+
+
+### Ideamaker
+Extensions -> Post Processing -> Modify G-Code ->   
+Add a script -> Insert at layer change -> G-code to insert = ``TIMELAPSE_TAKE_FRAME``
+
+![Cura Configuration](assets/img/timelapse-ideamaker-config.png)
+(Credits to Vez3d for the screenshot)
+
 
 ## Change the Resolution of your Camera
 You may want to change your Webcamstream to higher resolution, 
