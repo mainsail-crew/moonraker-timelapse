@@ -230,14 +230,6 @@ Add a script -> Insert at layer change -> G-code to insert = ``TIMELAPSE_TAKE_FR
 
 ## Change the Resolution of your Camera
 You may want to change your Webcamstream to higher resolution, 
-depeding on your OS the mpjepg-streamer config file location differ:   
-- MainsailOS: /boot/mainsail.txt   
-- FluiddPI: 	/boot/fluiddpi.txt   
-
-NOTE:   /boot is owned by root and can not editet as pi user!
-        To edit it use ``sudo nano /boot/mainsail.txt`` via ssh
-        or plug your sd card into your pc and edit it there.  
-
-    
-mjpeg-streamer options see:    
-https://github.com/jacksonliam/mjpg-streamer/blob/master/mjpg-streamer-experimental/plugins/input_uvc/README.md
+please refer to the documentation of your Image:  
+- MainsailOS: https://docs.mainsail.xyz/quicktips/multicam
+- FluiddPI: https://docs.fluidd.xyz/features/cameras 
