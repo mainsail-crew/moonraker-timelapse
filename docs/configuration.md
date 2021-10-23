@@ -1,4 +1,3 @@
-#
 This document describes Moonraker-timelapse configuration.  As this file
 references configuration for both Klipper (`printer.cfg`) and Moonraker
 (`moonraker.conf`), each example contains a commment indicating which
@@ -44,7 +43,7 @@ to add such on layerchange (refer to the 'Slicer setup' below)
 ##### hyperlapse
 This mode takes a frame every x seconds configured by the hyperlapse_cycle setting
 
-#### "hyperlapse_cycle"
+#### hyperlapse_cycle
 Defines the time interval in which a frame gets taken in the hyperlapse mode.
 
 #### autorender
@@ -56,7 +55,6 @@ frontend) to trigger the render process.
 #### saveFrames
 'True' enables or 'False' disables packing the frames to a zip file for external
 use or render.
-
 
 ### Takeframe specific
 
