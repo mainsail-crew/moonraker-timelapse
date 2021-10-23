@@ -176,8 +176,6 @@ class Timelapse:
                 }]
             }
 
-        database.delete_item("webcam", "configs")
-
         for setting in webcamConfig:
             settingvalue = webcamConfig[setting]
             database.insert_item(
@@ -218,7 +216,7 @@ class Timelapse:
                 "webcam", f"configs"
                 )
             snapshoturl = webcamconfig[self.config['camera']]['snapshoturl']
-        except:
+        except Exception:
             pass
         finally:
             self.config['snapshoturl'] = self.confighelper.get('snapshoturl',
@@ -310,22 +308,18 @@ class Timelapse:
 
     async def setgcodevariables(self) -> None:
         gcommand = "_SET_TIMELAPSE_SETUP " \
-                    + f" ENABLE={self.config['enabled']}" \
-                    + f" VERBOSE={self.config['gcode_verbose']}" \
-                    + f" PARK_ENABLE={self.config['parkhead']}" \
-                    + f" PARK_POS={self.config['parkpos']}" \
-                    + f" CUSTOM_POS_X={self.config['park_custom_pos_x']}" \
-                    + f" CUSTOM_POS_Y={self.config['park_custom_pos_y']}" \
-                    + f" CUSTOM_POS_DZ={self.config['park_custom_pos_dz']}" \
-                    + f" TRAVEL_SPEED={self.config['park_travel_speed']}" \
-                    + f" RETRACT_SPEED={self.config['park_retract_speed']}" \
-                    + f" EXTRUDE_SPEED={self.config['park_extrude_speed']}" \
-                    + f" RETRACT_DISTANCE={
-                                           self.config['park_retract_distance']
-                                          }"\
-                    + f" EXTRUDE_DISTANCE={
-                                           self.config['park_extrude_distance']
-                                          }"\
+            + f" ENABLE={self.config['enabled']}" \
+            + f" VERBOSE={self.config['gcode_verbose']}" \
+            + f" PARK_ENABLE={self.config['parkhead']}" \
+            + f" PARK_POS={self.config['parkpos']}" \
+            + f" CUSTOM_POS_X={self.config['park_custom_pos_x']}" \
+            + f" CUSTOM_POS_Y={self.config['park_custom_pos_y']}" \
+            + f" CUSTOM_POS_DZ={self.config['park_custom_pos_dz']}" \
+            + f" TRAVEL_SPEED={self.config['park_travel_speed']}" \
+            + f" RETRACT_SPEED={self.config['park_retract_speed']}" \
+            + f" EXTRUDE_SPEED={self.config['park_extrude_speed']}" \
+            + f" RETRACT_DISTANCE={self.config['park_retract_distance']}" \
+            + f" EXTRUDE_DISTANCE={self.config['park_extrude_distance']}" \
 
         logging.debug(f"run gcommand: {gcommand}")
         try:
@@ -400,7 +394,7 @@ class Timelapse:
             self.cleanup()
 
             # start hyperlapse if mode is set
-            if  self.config['mode'] == "hyperlapse":
+            if self.config['mode'] == "hyperlapse":
                 gcommand = "HYPERLAPSE ACTION=START" \
                     + f" CYCLE={self.config['hyperlapse_cycle']}"
 
