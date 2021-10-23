@@ -33,7 +33,7 @@ check_moonraker()
 link_extension()
 {
     echo "Linking extension to moonraker..."
-    ln -sf "${SRCDIR}/timelapse.py" "${MOONRAKER_PATH}/moonraker/components/timelapse.py"
+    ln -sf "${SRCDIR}/component/timelapse.py" "${MOONRAKER_PATH}/moonraker/components/timelapse.py"
 	echo "Linking macro file"	
     ln -sf "${SRCDIR}/klipper_macro/timelapse.cfg" "${KLIPPER_CONFIG_PATH}/timelapse.cfg"
 }
