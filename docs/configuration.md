@@ -230,8 +230,7 @@ Add a script -> Insert at layer change -> G-code to insert = ``TIMELAPSE_TAKE_FR
 
 
 ### Ideamaker
-Extensions -> Post Processing -> Modify G-Code ->   
-Add a script -> Insert at layer change -> G-code to insert = ``TIMELAPSE_TAKE_FRAME``
+Advanced Settings -> Gcode -> Layer Change Gcode -> ``TIMELAPSE_TAKE_FRAME``
 
 ![Cura Configuration](assets/img/timelapse-ideamaker-config.png)
 (Credits to Vez3d for the screenshot)
