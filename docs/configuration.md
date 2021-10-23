@@ -237,7 +237,9 @@ Advanced Settings -> Gcode -> Layer Change Gcode -> ``TIMELAPSE_TAKE_FRAME``
 
 
 ## Change the Resolution of your Camera
-You may want to change your Webcamstream to higher resolution, 
-please refer to the documentation of your Image:  
+You may want to change your Timelapse to a higher resolution, you
+need to change the Webcamstream to a higher resolution since the
+Component will grab the frame of the Streamer.
+To do so, please refer to the documentation of your Image:  
 - MainsailOS: https://docs.mainsail.xyz/quicktips/multicam
 - FluiddPI: https://docs.fluidd.xyz/features/cameras 
