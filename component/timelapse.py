@@ -92,41 +92,6 @@ class Timelapse:
                 'previewImage': True,
                 'saveFrames': False
             }
-            
-        ## webcam db config
-        # webcamConfig: Dict[str, Any] =  {
-            # "boolNavi": True,
-            # "configs": [{
-                    # "name": "Default",
-                    # "icon": "mdi-webcam",
-                    # "service": "mjpegstreamer-adaptive",
-                    # "targetFps": 15,
-                    # "url": "/webcam/?action=stream",
-                    # "snapshoturl": "/webcam/?action=snapshot",
-                    # "flipX": False,
-                    # "flipY": False
-                # },
-                # {
-                    # "name": "cam2",
-                    # "icon": "mdi-webcam",
-                    # "service": "mjpegstreamer-adaptive",
-                    # "targetFps": 15,
-                    # "url": "/webcam2/?action=stream",
-                    # "snapshoturl": "/webcam2/?action=snapshot",
-                    # "flipX": False,
-                    # "flipY": False
-                # }]
-			# }
-        
-        # database.delete_item("webcam", "configs")
-        
-        # for setting in webcamConfig:
-            # settingvalue = webcamConfig[setting]
-            # database.insert_item(
-                # "webcam",
-                # f"{setting}",
-                # settingvalue
-                # )
 
         # Get Config from Database and overwrite defaults
         dbconfig: Dict[str, Any] = database.get_item(
@@ -184,46 +149,81 @@ class Timelapse:
         self.server.register_endpoint(
             "/machine/timelapse/lastframeinfo", ['GET'],
             self.webrequest_lastframeinfo)
-            
-            
-    def overwriteDbconfigWithConfighelper(self) -> None:                
+
+    def initialiezeWebcamDB(self) -> None:
+        database: DBComp = self.server.lookup_component("database")
+        webcamConfig: Dict[str, Any] = {
+            "boolNavi": True,
+            "configs": [{
+                    "name": "Default",
+                    "icon": "mdi-webcam",
+                    "service": "mjpegstreamer-adaptive",
+                    "targetFps": 15,
+                    "url": "/webcam/?action=stream",
+                    "snapshoturl": "/webcam/?action=snapshot",
+                    "flipX": False,
+                    "flipY": False
+                },
+                {
+                    "name": "cam2",
+                    "icon": "mdi-webcam",
+                    "service": "mjpegstreamer-adaptive",
+                    "targetFps": 15,
+                    "url": "/webcam2/?action=stream",
+                    "snapshoturl": "/webcam2/?action=snapshot",
+                    "flipX": False,
+                    "flipY": False
+                }]
+            }
+
+        database.delete_item("webcam", "configs")
+
+        for setting in webcamConfig:
+            settingvalue = webcamConfig[setting]
+            database.insert_item(
+                "webcam",
+                f"{setting}",
+                settingvalue
+                )
+
+    def overwriteDbconfigWithConfighelper(self) -> None:
         blockedsettings = []
-        
-        for setting in self.confighelper.get_options():
+
+        for s in self.confighelper.get_options():
             if setting in self.config:
-                settingtype = type(self.config[setting])
-                if settingtype == str:
-                    self.config[setting] = self.confighelper.get(setting)
-                elif settingtype == bool:
-                    self.config[setting] = self.confighelper.getboolean(setting)
-                elif settingtype == int:
-                    self.config[setting] = self.confighelper.getint(setting)
-                elif settingtype == float:
-                    self.config[setting] = self.confighelper.getfloat(setting)
+                stype = type(self.config[s])
+                if stype == str:
+                    self.config[s] = self.confighelper.get(s)
+                elif stype == bool:
+                    self.config[s] = self.confighelper.getboolean(s)
+                elif stype == int:
+                    self.config[s] = self.confighelper.getint(s)
+                elif stype == float:
+                    self.config[s] = self.confighelper.getfloat(s)
 
                 # add the setting to list of blockedsettings
                 blockedsettings.append(setting)
-        
-        # append the list of blockedsettings to the config dict        
-        self.config.update( {'blockedsettings': blockedsettings} )
+
+        # append the list of blockedsettings to the config dict
+        self.config.update({'blockedsettings': blockedsettings})
         logging.debug(f"blockedsettings {self.config['blockedsettings']}")
-        
+
     def getsnapshotUrl(self) -> None:
         database: DBComp = self.server.lookup_component("database")
 
         # get webcam config from DB
         snapshoturl = self.config['snapshoturl']
-        try: 
+        try:
             webcamconfig = database.get_item(
                 "webcam", f"configs"
                 )
             snapshoturl = webcamconfig[self.config['camera']]['snapshoturl']
         except:
-            pass        
+            pass
         finally:
             self.config['snapshoturl'] = self.confighelper.get('snapshoturl',
-                                                                snapshoturl
-                                                                )
+                                                               snapshoturl
+                                                               )
 
         if not self.config['snapshoturl'].startswith('http'):
             if not self.config['snapshoturl'].startswith('/'):
@@ -286,13 +286,13 @@ class Timelapse:
                         f"config.{setting}",
                         settingvalue
                         )
-                    
+
                     if setting == "camera":
                         self.getsnapshotUrl()
 
                     if setting in settingsWithGcodechange:
                         gcodechange = True
-                        
+
                     logging.debug(f"changed setting: {setting} "\
                                   f"value: {settingvalue} "\
                                   f"type: {settingtype}"
@@ -301,7 +301,7 @@ class Timelapse:
             if gcodechange:
                 ioloop = IOLoop.current()
                 ioloop.spawn_callback(self.setgcodevariables)
-        
+
         return self.config
 
     async def handle_klippy_ready(self) -> None:
@@ -320,8 +320,12 @@ class Timelapse:
                     + f" TRAVEL_SPEED={self.config['park_travel_speed']}" \
                     + f" RETRACT_SPEED={self.config['park_retract_speed']}" \
                     + f" EXTRUDE_SPEED={self.config['park_extrude_speed']}" \
-                    + f" RETRACT_DISTANCE={self.config['park_retract_distance']}" \
-                    + f" EXTRUDE_DISTANCE={self.config['park_extrude_distance']}" \
+                    + f" RETRACT_DISTANCE={
+                                           self.config['park_retract_distance']
+                                          }"\
+                    + f" EXTRUDE_DISTANCE={
+                                           self.config['park_extrude_distance']
+                                          }"\
 
         logging.debug(f"run gcommand: {gcommand}")
         try:
