@@ -163,7 +163,8 @@ The Plugin offers configuration via a Http API which is the preferred method to
 configure Timelapse. How ever if your frontend doesn't support those
 configuration there is a Fallback  to moonraker.conf. However beware adding and
 uncommenting this in your moonraker.conf will disable the possibility to change
-the setting in the frontend. Please refer to section above what each setting does
+the setting in the frontend. Please refer to section above what each setting
+does.
 
 ```ini
 
