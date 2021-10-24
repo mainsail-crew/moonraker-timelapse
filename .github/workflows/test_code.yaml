@@ -14,7 +14,7 @@ jobs:
           use-pycodestyle: true
           use-flake8: false
           use-black: false
-          use-mypy: true
+          use-mypy: false
           use-isort: false
           extra-pycodestyle-options: "--ignore=E226,E301,E302,E303,W503,W504 --max-line-length=80 --max-doc-length=80"
-          extra-mypy-options: "--ignore-missing-imports"
+          extra-mypy-options: "--ignore-missing-imports --follow-imports=silent"
