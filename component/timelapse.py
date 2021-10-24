@@ -61,42 +61,42 @@ class Timelapse:
 
         # Setup default config
         self.config: Dict[str, Any] = {
-                'enabled': True,
-                'mode': "layermacro",
-                'camera': 0,
-                'snapshoturl': "http://localhost:8080/?action=snapshot",
-                'gcode_verbose': True,
-                'parkhead': False,
-                'parkpos': "back_left",
-                'park_custom_pos_x': 0.0,
-                'park_custom_pos_y': 0.0,
-                'park_custom_pos_dz': 0.0,
-                'park_travel_speed': 100,
-                'park_retract_speed': 15,
-                'park_extrude_speed': 15,
-                'park_retract_distance': 1.0,
-                'park_extrude_distance': 1.0,
-                'hyperlapse_cycle': 30,
-                'autorender': True,
-                'constant_rate_factor': 23,
-                'output_framerate': 30,
-                'pixelformat': "yuv420p",
-                'time_format_code': "%Y%m%d_%H%M",
-                'extraoutputparams': "",
-                'variable_fps': False,
-                'targetlength': 10,
-                'variable_fps_min': 5,
-                'variable_fps_max': 60,
-                'rotation': 0,
-                'dublicatelastframe': 0,
-                'previewImage': True,
-                'saveFrames': False
-            }
+            'enabled': True,
+            'mode': "layermacro",
+            'camera': 0,
+            'snapshoturl': "http://localhost:8080/?action=snapshot",
+            'gcode_verbose': True,
+            'parkhead': False,
+            'parkpos': "back_left",
+            'park_custom_pos_x': 0.0,
+            'park_custom_pos_y': 0.0,
+            'park_custom_pos_dz': 0.0,
+            'park_travel_speed': 100,
+            'park_retract_speed': 15,
+            'park_extrude_speed': 15,
+            'park_retract_distance': 1.0,
+            'park_extrude_distance': 1.0,
+            'hyperlapse_cycle': 30,
+            'autorender': True,
+            'constant_rate_factor': 23,
+            'output_framerate': 30,
+            'pixelformat': "yuv420p",
+            'time_format_code': "%Y%m%d_%H%M",
+            'extraoutputparams': "",
+            'variable_fps': False,
+            'targetlength': 10,
+            'variable_fps_min': 5,
+            'variable_fps_max': 60,
+            'rotation': 0,
+            'dublicatelastframe': 0,
+            'previewImage': True,
+            'saveFrames': False
+        }
 
         # Get Config from Database and overwrite defaults
         dbconfig: Dict[str, Any] = database.get_item(
             "timelapse", "config", self.config
-            )
+        )
         self.config.update(dbconfig)
 
         # Overwrite Config with fixed config made in moonraker.conf
@@ -155,26 +155,25 @@ class Timelapse:
         webcamConfig: Dict[str, Any] = {
             "boolNavi": True,
             "configs": [{
-                    "name": "Default",
-                    "icon": "mdi-webcam",
-                    "service": "mjpegstreamer-adaptive",
-                    "targetFps": 15,
-                    "url": "/webcam/?action=stream",
-                    "snapshoturl": "/webcam/?action=snapshot",
-                    "flipX": False,
-                    "flipY": False
-                },
-                {
-                    "name": "cam2",
-                    "icon": "mdi-webcam",
-                    "service": "mjpegstreamer-adaptive",
-                    "targetFps": 15,
-                    "url": "/webcam2/?action=stream",
-                    "snapshoturl": "/webcam2/?action=snapshot",
-                    "flipX": False,
-                    "flipY": False
-                }]
-            }
+                "name": "Default",
+                "icon": "mdi-webcam",
+                "service": "mjpegstreamer-adaptive",
+                "targetFps": 15,
+                "url": "/webcam/?action=stream",
+                "snapshoturl": "/webcam/?action=snapshot",
+                "flipX": False,
+                "flipY": False
+            }, {
+                "name": "cam2",
+                "icon": "mdi-webcam",
+                "service": "mjpegstreamer-adaptive",
+                "targetFps": 15,
+                "url": "/webcam2/?action=stream",
+                "snapshoturl": "/webcam2/?action=snapshot",
+                "flipX": False,
+                "flipY": False
+            }]
+        }
 
         for setting in webcamConfig:
             settingvalue = webcamConfig[setting]
@@ -182,7 +181,7 @@ class Timelapse:
                 "webcam",
                 f"{setting}",
                 settingvalue
-                )
+            )
 
     def overwriteDbconfigWithConfighelper(self) -> None:
         blockedsettings = []
@@ -214,7 +213,7 @@ class Timelapse:
         try:
             webcamconfig = database.get_item(
                 "webcam", f"configs"
-                )
+            )
             snapshoturl = webcamconfig[self.config['camera']]['snapshoturl']
         except Exception:
             pass
@@ -260,7 +259,7 @@ class Timelapse:
                 'park_travel_speed', 'park_retract_speed',
                 'park_extrude_speed', 'park_retract_distance',
                 'park_extrude_distance'
-                ]
+            ]
 
             for setting in args:
                 if setting in self.config:
@@ -283,7 +282,7 @@ class Timelapse:
                         "timelapse",
                         f"config.{setting}",
                         settingvalue
-                        )
+                    )
 
                     if setting == "camera":
                         self.getsnapshotUrl()
@@ -291,8 +290,8 @@ class Timelapse:
                     if setting in settingsWithGcodechange:
                         gcodechange = True
 
-                    logging.debug(f"changed setting: {setting} "\
-                                  f"value: {settingvalue} "\
+                    logging.debug(f"changed setting: {setting} "
+                                  f"value: {settingvalue} "
                                   f"type: {settingtype}"
                                   )
 
@@ -330,7 +329,7 @@ class Timelapse:
 
     def call_newframe(self, macropark=False, hyperlapse=False) -> None:
         if self.config['enabled']:
-            if  self.config['mode'] == "hyperlapse":
+            if self.config['mode'] == "hyperlapse":
                 if hyperlapse:
                     self.macropark = macropark
                     ioloop = IOLoop.current()
@@ -409,7 +408,7 @@ class Timelapse:
             # print_done
             if self.config['enabled']:
                 # stop hyperlapse if mode is set
-                if  self.config['mode'] == "hyperlapse":
+                if self.config['mode'] == "hyperlapse":
                     gcommand = "HYPERLAPSE ACTION=STOP"
 
                     logging.debug(f"run gcommand: {gcommand}")
@@ -456,7 +455,7 @@ class Timelapse:
 
             # get printed filename
             kresult = await self.klippy_apis.query_objects(
-                                            {'print_stats': None})
+                {'print_stats': None})
             pstats = kresult.get("print_stats", {})
             gcodefilename = pstats.get("filename", "").split("/")[-1]
 
@@ -508,7 +507,7 @@ class Timelapse:
 
             # get printed filename
             kresult = await self.klippy_apis.query_objects(
-                                            {'print_stats': None})
+                {'print_stats': None})
             pstats = kresult.get("print_stats", {})
             gcodefilename = pstats.get("filename", "").split("/")[-1]
 
@@ -542,7 +541,7 @@ class Timelapse:
                 fps = int(self.framecount / self.config['targetlength'])
                 fps = max(min(fps,
                               self.config['variable_fps_max']),
-                              self.config['variable_fps_min'])
+                          self.config['variable_fps_min'])
             else:
                 fps = self.config['output_framerate']
 
