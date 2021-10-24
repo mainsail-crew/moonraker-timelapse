@@ -17,6 +17,6 @@ Also there are configuration instructions:
 ![Video Example](TBD)
 
 # Contributing
-See the installation instructions:   
+See the constribution instructions:   
 [contributing.md](docs/contributing.md)
 
