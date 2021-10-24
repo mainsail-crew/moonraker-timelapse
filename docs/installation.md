@@ -32,7 +32,7 @@ origin: https://github.com/FrYakaTKoP/moonraker-timelapse.git
 ```
 
 The script assumes that Klipper is also in your home directory under
-"klipper": `${HOME}/klipper`.
+"klipper": `${HOME}/klipper` and "moonraker": `${HOME}\moonraker`.
 
 >:point_up: **NOTE:** Currently, there is a dummy systemd service installed
 > to satisfy moonraker's update manager which also restarts Moonraker and Klipper.
