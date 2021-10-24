@@ -1,4 +1,11 @@
 #!/bin/bash
+# Moonraker Timelapse component installer
+#
+# Copyright (C) 2021 Christoph Frei <fryakatkop@gmail.com>
+#
+# This file may be distributed under the terms of the GNU GPLv3 license.
+#
+# Note:
 # this installer script is heavily inspired by 
 # https://github.com/protoloft/klipper_z_calibration/blob/master/install.sh
 
