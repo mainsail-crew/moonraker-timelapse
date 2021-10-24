@@ -77,7 +77,7 @@ EOF
 
 restart_services()
 {
-	echo "Restarting Moonraker..."
+    echo "Restarting Moonraker..."
     sudo systemctl restart klipper
     echo "Restarting Klipper..."
     sudo systemctl restart klipper
