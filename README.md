@@ -1,6 +1,22 @@
-# This is a moonraker plugin for a creating Timelapse videos
+# Moonraker-timelapse
 
-**Warning** this is a very early state of this repository, still under heavy
-development!!!
+A 3rd party Moonraker component to create timelapse of 3D prints.
 
-coming soon:tm:
+Learn More about...   
+Moonraker: https://moonraker.readthedocs.io/en/latest/   
+
+## Installing
+
+See the installation instructions:   
+[installation.md](docs/installation.md)
+
+Also there are configuration instructions:
+[configuration.md](docs/configuration.md)
+
+## Example
+![Video Example](TBD)
+
+# Contributing
+See the installation instructions:   
+[contributing.md](docs/contributing.md)
+
