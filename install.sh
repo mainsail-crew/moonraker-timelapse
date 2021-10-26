@@ -41,8 +41,9 @@ link_extension()
 {
     echo "Linking extension to moonraker..."
     ln -sf "${SRCDIR}/component/timelapse.py" "${MOONRAKER_PATH}/moonraker/components/timelapse.py"
-	echo "Linking macro file"	
-    ln -sf "${SRCDIR}/klipper_macro/timelapse.cfg" "${KLIPPER_CONFIG_PATH}/timelapse.cfg"
+    echo "Linking macro file"
+    sudo mkdir -p "${KLIPPER_CONFIG_PATH}/timelapse/"
+    sudo ln -sf "${SRCDIR}/klipper_macro/timelapse.cfg" "${KLIPPER_CONFIG_PATH}/timelapse/timelapse.cfg"
 }
 
 install_script()

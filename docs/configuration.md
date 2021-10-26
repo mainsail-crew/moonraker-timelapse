@@ -208,7 +208,7 @@ Include the macro file to your printer.cfg
 ```ini
 # printer.cfg
 
-[include timelapse.cfg]
+[include timelapse/timelapse.cfg]
 
 ```
 
