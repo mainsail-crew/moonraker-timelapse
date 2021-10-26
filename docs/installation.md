@@ -28,7 +28,7 @@ add following to your 'moonraker.conf'
 type: git_repo
 primary_branch: main
 path: /home/pi/moonraker-timelapse
-origin: https://github.com/FrYakaTKoP/moonraker-timelapse.git
+origin: https://github.com/mainsail-crew/moonraker-timelapse.git
 ```
 
 The script assumes that Klipper is also in your home directory under
