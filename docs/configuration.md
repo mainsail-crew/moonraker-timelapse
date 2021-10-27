@@ -106,7 +106,7 @@ Distance to extrude to fill the nozzle before resuming the print (Unit mm)
 
 #### time_format_code
 This defines how the rendered video should be named. 
-It uses the python dateime format. Default is "%Y%m%d_%H%M".
+It uses the python datetime format. Default is "%Y%m%d_%H%M".
 More info about the datetime format can be found here https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
 
 #### output_framerate
