@@ -118,7 +118,7 @@ Note: this will be ignored if variable_fps is enabled.
 This uses the count of taken frames and 'targetlength', but is limited by
 'variable_fps_min' and 'variable_fps_max' settings.
 
-### targetlength
+#### targetlength
 Defines the target length of a video (Unit seconds)
 
 #### variable_fps_min
@@ -150,7 +150,7 @@ Note: This will be disabled if extraoutputparams are specified.
 #### extraoutputparams
 Defines extra output parameters to FFMPEG 
 further info: https://ffmpeg.org/ffmpeg.html 
-Note: Specifing anythin here will disable the rotation setting. You can use
+Note: Specifing anything here will disable the rotation setting. You can use
 advanced filters to achieve a rotation in combination with other filters though.
 
 #### previewImage
