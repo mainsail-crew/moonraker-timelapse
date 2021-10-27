@@ -126,7 +126,10 @@ class Timelapse:
 
         # setup eventhandlers and endpoints
         file_manager = self.server.lookup_component("file_manager")
-        file_manager.register_directory("timelapse", self.out_dir)
+        file_manager.register_directory("timelapse",
+                                        self.out_dir,
+                                        full_access=True
+                                        )
         file_manager.register_directory("timelapse_frames", self.temp_dir)
         self.server.register_notification("timelapse:timelapse_event")
         self.server.register_event_handler(
