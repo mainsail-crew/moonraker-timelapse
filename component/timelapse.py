@@ -189,20 +189,20 @@ class Timelapse:
     def overwriteDbconfigWithConfighelper(self) -> None:
         blockedsettings = []
 
-        for s in self.confighelper.get_options():
-            if setting in self.config:
-                stype = type(self.config[s])
-                if stype == str:
-                    self.config[s] = self.confighelper.get(s)
-                elif stype == bool:
-                    self.config[s] = self.confighelper.getboolean(s)
-                elif stype == int:
-                    self.config[s] = self.confighelper.getint(s)
-                elif stype == float:
-                    self.config[s] = self.confighelper.getfloat(s)
+        for config in self.confighelper.get_options():
+            if config in self.config:
+                configtype = type(self.config[config])
+                if configtype == str:
+                    self.config[config] = self.confighelper.get(config)
+                elif configtype == bool:
+                    self.config[config] = self.confighelper.getboolean(config)
+                elif configtype == int:
+                    self.config[config] = self.confighelper.getint(config)
+                elif configtype == float:
+                    self.config[config] = self.confighelper.getfloat(config)
 
-                # add the setting to list of blockedsettings
-                blockedsettings.append(setting)
+                # add the config to list of blockedsettings
+                blockedsettings.append(config)
 
         # append the list of blockedsettings to the config dict
         self.config.update({'blockedsettings': blockedsettings})
