@@ -190,7 +190,7 @@ class Timelapse:
         blockedsettings = []
 
         for s in self.confighelper.get_options():
-            if setting in self.config:
+            if s in self.config:
                 stype = type(self.config[s])
                 if stype == str:
                     self.config[s] = self.confighelper.get(s)
@@ -202,7 +202,7 @@ class Timelapse:
                     self.config[s] = self.confighelper.getfloat(s)
 
                 # add the setting to list of blockedsettings
-                blockedsettings.append(setting)
+                blockedsettings.append(s)
 
         # append the list of blockedsettings to the config dict
         self.config.update({'blockedsettings': blockedsettings})
