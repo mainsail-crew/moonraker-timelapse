@@ -133,7 +133,7 @@ class Timelapse:
         file_manager.register_directory("timelapse_frames", self.temp_dir)
         self.server.register_notification("timelapse:timelapse_event")
         self.server.register_event_handler(
-            "server:gcode_response", self.handle_gcode_respone)
+            "server:gcode_response", self.handle_gcode_response)
         self.server.register_event_handler(
             "server:status_update", self.handle_status_update)
         self.server.register_event_handler(
