@@ -89,8 +89,8 @@ class Timelapse:
             'variable_fps_max': 60,
             'rotation': 0,
             'dublicatelastframe': 0,
-            'previewImage': True,
-            'saveFrames': False
+            'previewimage': True,
+            'saveframes': False
         }
 
         # Get Config from Database and overwrite defaults
@@ -421,7 +421,7 @@ class Timelapse:
                         msg = f"Error executing GCode {gcommand}"
                         logging.exception(msg)
 
-                if self.config['saveFrames']:
+                if self.config['saveframes']:
                     ioloop = IOLoop.current()
                     ioloop.spawn_callback(self.saveFramesZip)
 
@@ -611,7 +611,7 @@ class Timelapse:
                     logging.info(f"moving output file failed: {err}")
 
                 # copy image preview
-                if self.config['previewImage']:
+                if self.config['previewimage']:
                     previewfile = f"{outfile}.jpg"
                     previewSrc = filelist[-1:][0]
                     try:
@@ -620,7 +620,7 @@ class Timelapse:
                         logging.info(f"copying preview image failed: {err}")
                     else:
                         result.update({
-                            'previewImage': previewfile
+                            'previewimage': previewfile
                         })
             else:
                 status = "error"

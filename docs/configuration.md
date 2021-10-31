@@ -198,8 +198,8 @@ does.
 #variable_fps_max: 60
 #rotation: 0
 #dublicatelastframe: 0
-#previewImage: True
-#saveFrames: False
+#previewimage: True
+#saveframes: False
 
 ```
 
