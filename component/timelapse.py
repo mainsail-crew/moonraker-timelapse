@@ -65,7 +65,7 @@ class Timelapse:
             'mode': "layermacro",
             'camera': 0,
             'snapshoturl': "http://localhost:8080/?action=snapshot",
-            'gcode_verbose': True,
+            'gcode_verbose': False,
             'parkhead': False,
             'parkpos': "back_left",
             'park_custom_pos_x': 0.0,
@@ -446,6 +446,7 @@ class Timelapse:
                     ioloop = IOLoop.current()
                     ioloop.spawn_callback(self.render)
 
+            
     def cleanup(self) -> None:
         logging.debug("cleanup frame directory")
         filelist = glob.glob(self.temp_dir + "frame*.jpg")
@@ -505,12 +506,11 @@ class Timelapse:
         self.byrendermacro = byrendermacro
         ioloop = IOLoop.current()
         ioloop.spawn_callback(self.render)
-
+ 
     async def render(self, webrequest=None):
         filelist = sorted(glob.glob(self.temp_dir + "frame*.jpg"))
         self.framecount = len(filelist)
         result = {'action': 'render'}
-
         if not filelist:
             msg = "no frames to render, skip"
             status = "skipped"
@@ -626,6 +626,15 @@ class Timelapse:
                                 self.out_dir + outfile + ".mp4")
                 except OSError as err:
                     logging.info(f"moving output file failed: {err}")
+                
+                gcommand = "_done_shutdown"
+                logging.debug(f"run gcommand: {gcommand}")
+                try:
+                    await self.klippy_apis.run_gcode(gcommand)
+                except self.server.error:
+                    msg = f"Error executing GCode {gcommand}"
+                    logging.exception(msg)
+
 
                 # copy image preview
                 if self.config['previewimage']:
