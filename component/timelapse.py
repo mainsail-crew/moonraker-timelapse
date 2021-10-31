@@ -133,7 +133,9 @@ class Timelapse:
         file_manager.register_directory("timelapse_frames", self.temp_dir)
         self.server.register_notification("timelapse:timelapse_event")
         self.server.register_event_handler(
-            "server:gcode_response", self.handle_status_update)
+            "server:gcode_response", self.handle_gcode_respone)
+        self.server.register_event_handler(
+            "server:status_update", self.handle_status_update)
         self.server.register_event_handler(
             "server:klippy_ready", self.handle_klippy_ready)
         self.server.register_remote_method(
@@ -389,9 +391,24 @@ class Timelapse:
             except self.server.error:
                 msg = f"Error executing GCode {gcommand}"
                 logging.exception(msg)
+    
+    async def handle_status_update(self, status: Dict[str, Any]) -> None:
+        if 'print_stats' in status:
+            printstats = status['print_stats']
+            if 'state' in printstats:
+                state = printstats['state']
+                if state == 'cancelled':
+                    gcommand = "HYPERLAPSE ACTION=STOP"
 
-    async def handle_status_update(self, status: str) -> None:
-        if status == "File selected":
+                    logging.debug(f"run gcommand: {gcommand}")
+                    try:
+                        await self.klippy_apis.run_gcode(gcommand)
+                    except self.server.error:
+                        msg = f"Error executing GCode {gcommand}"
+                        logging.exception(msg)
+
+    async def handle_gcode_response(self, gresponse: str) -> None:
+        if gresponse == "File selected":
             # print_started
             self.cleanup()
 
@@ -407,7 +424,7 @@ class Timelapse:
                     msg = f"Error executing GCode {gcommand}"
                     logging.exception(msg)
 
-        elif status == "Done printing file":
+        elif gresponse == "Done printing file":
             # print_done
             if self.config['enabled']:
                 # stop hyperlapse if mode is set
