@@ -391,7 +391,7 @@ class Timelapse:
             except self.server.error:
                 msg = f"Error executing GCode {gcommand}"
                 logging.exception(msg)
-    
+
     async def handle_status_update(self, status: Dict[str, Any]) -> None:
         if 'print_stats' in status:
             printstats = status['print_stats']
