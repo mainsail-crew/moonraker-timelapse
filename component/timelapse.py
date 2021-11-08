@@ -63,7 +63,7 @@ class Timelapse:
         self.config: Dict[str, Any] = {
             'enabled': True,
             'mode': "layermacro",
-            'camera': 0,
+            'camera': "",
             'snapshoturl': "http://localhost:8080/?action=snapshot",
             'gcode_verbose': True,
             'parkhead': False,
@@ -98,6 +98,8 @@ class Timelapse:
             "timelapse", "config", self.config
         )
         self.config.update(dbconfig)
+        
+        # self.initialiezeWebcamDB()
 
         # Overwrite Config with fixed config made in moonraker.conf
         # this is a fallback to older setups and when the Frontend doesn't
@@ -157,33 +159,32 @@ class Timelapse:
 
     def initialiezeWebcamDB(self) -> None:
         database: DBComp = self.server.lookup_component("database")
-        webcamConfig: Dict[str, Any] = {
-            "boolNavi": True,
-            "configs": [{
+        webcamConfig: Dict[str, Any] =  {
+            "1a2461eb-8f76-4f9e-8bed-b53d75f72f85":{
                 "name": "Default",
                 "icon": "mdi-webcam",
                 "service": "mjpegstreamer-adaptive",
                 "targetFps": 15,
-                "url": "/webcam/?action=stream",
-                "snapshoturl": "/webcam/?action=snapshot",
+                "urlStream": "/webcam/?action=stream",
+                "urlSnapshot": "/webcam/?action=snapshot",
                 "flipX": False,
                 "flipY": False
-            }, {
+            }, "1a2461eb-8f76-4f9e-8bed-b53d75f72f86":{
                 "name": "cam2",
                 "icon": "mdi-webcam",
                 "service": "mjpegstreamer-adaptive",
                 "targetFps": 15,
-                "url": "/webcam2/?action=stream",
-                "snapshoturl": "/webcam2/?action=snapshot",
+                "urlStream": "/webcam2/?action=stream",
+                "urlSnapshot": "/webcam2/?action=snapshot",
                 "flipX": False,
                 "flipY": False
-            }]
+            }
         }
 
         for setting in webcamConfig:
             settingvalue = webcamConfig[setting]
             database.insert_item(
-                "webcam",
+                "webcams",
                 f"{setting}",
                 settingvalue
             )
@@ -212,14 +213,13 @@ class Timelapse:
 
     def getsnapshotUrl(self) -> None:
         database: DBComp = self.server.lookup_component("database")
+        snapshoturl = self.config['snapshoturl'] 
 
-        # get webcam config from DB
-        snapshoturl = self.config['snapshoturl']
         try:
             webcamconfig = database.get_item(
-                "webcam", f"configs"
+                "webcams", self.config['camera']
             )
-            snapshoturl = webcamconfig[self.config['camera']]['snapshoturl']
+            snapshoturl = webcamconfig['urlSnapshot']
         except Exception:
             pass
         finally:
