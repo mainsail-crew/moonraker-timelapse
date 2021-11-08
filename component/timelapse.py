@@ -98,8 +98,6 @@ class Timelapse:
             "timelapse", "config", self.config
         )
         self.config.update(dbconfig)
-        
-        # self.initialiezeWebcamDB()
 
         # Overwrite Config with fixed config made in moonraker.conf
         # this is a fallback to older setups and when the Frontend doesn't
@@ -156,38 +154,6 @@ class Timelapse:
         self.server.register_endpoint(
             "/machine/timelapse/lastframeinfo", ['GET'],
             self.webrequest_lastframeinfo)
-
-    def initialiezeWebcamDB(self) -> None:
-        database: DBComp = self.server.lookup_component("database")
-        webcamConfig: Dict[str, Any] =  {
-            "1a2461eb-8f76-4f9e-8bed-b53d75f72f85":{
-                "name": "Default",
-                "icon": "mdi-webcam",
-                "service": "mjpegstreamer-adaptive",
-                "targetFps": 15,
-                "urlStream": "/webcam/?action=stream",
-                "urlSnapshot": "/webcam/?action=snapshot",
-                "flipX": False,
-                "flipY": False
-            }, "1a2461eb-8f76-4f9e-8bed-b53d75f72f86":{
-                "name": "cam2",
-                "icon": "mdi-webcam",
-                "service": "mjpegstreamer-adaptive",
-                "targetFps": 15,
-                "urlStream": "/webcam2/?action=stream",
-                "urlSnapshot": "/webcam2/?action=snapshot",
-                "flipX": False,
-                "flipY": False
-            }
-        }
-
-        for setting in webcamConfig:
-            settingvalue = webcamConfig[setting]
-            database.insert_item(
-                "webcams",
-                f"{setting}",
-                settingvalue
-            )
 
     def overwriteDbconfigWithConfighelper(self) -> None:
         blockedsettings = []
