@@ -179,7 +179,7 @@ class Timelapse:
 
     def getsnapshotUrl(self) -> None:
         database: DBComp = self.server.lookup_component("database")
-        snapshoturl = self.config['snapshoturl'] 
+        snapshoturl = self.config['snapshoturl']
 
         try:
             webcamconfig = database.get_item(
