@@ -16,6 +16,12 @@ bash ~/moonraker-timelapse/install.sh
 
 This will clone the repository and execute the installer script.
 
+The script assumes that Klipper is also in your home directory under
+"klipper": `${HOME}/klipper` and "moonraker": `${HOME}\moonraker`.
+
+>:point_up: **NOTE:** Currently, there is a dummy systemd service installed
+> to satisfy moonraker's update manager which also restarts Moonraker and Klipper.
+
 ## Updating
 
 This repo can be updated with the update manager of Moonraker. To do so 
@@ -27,15 +33,9 @@ add following to your 'moonraker.conf'
 [update_manager timelapse]
 type: git_repo
 primary_branch: main
-path: /home/pi/moonraker-timelapse
+path: ~/moonraker-timelapse
 origin: https://github.com/mainsail-crew/moonraker-timelapse.git
 ```
-
-The script assumes that Klipper is also in your home directory under
-"klipper": `${HOME}/klipper` and "moonraker": `${HOME}\moonraker`.
-
->:point_up: **NOTE:** Currently, there is a dummy systemd service installed
-> to satisfy moonraker's update manager which also restarts Moonraker and Klipper.
 
 # Configuration
 
