@@ -88,7 +88,7 @@ class Timelapse:
             'variable_fps_min': 5,
             'variable_fps_max': 60,
             'rotation': 0,
-            'dublicatelastframe': 0,
+            'duplicatelastframe': 0,
             'previewimage': True,
             'saveframes': False
         }
@@ -505,10 +505,10 @@ class Timelapse:
 
             # dublicate last frame
             duplicates = []
-            if self.config['dublicatelastframe'] > 0:
+            if self.config['duplicatelastframe'] > 0:
                 lastframe = filelist[-1:][0]
 
-                for i in range(self.config['dublicatelastframe']):
+                for i in range(self.config['duplicatelastframe']):
                     nextframe = str(self.framecount + i + 1).zfill(6)
                     duplicate = "frame" + nextframe + ".jpg"
                     duplicatePath = self.temp_dir + duplicate

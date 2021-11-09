@@ -140,7 +140,7 @@ mobiles and others need 'yuv420p' which is default the timelapse component.
 To get more info which pixelformats are available run 'ffmpeg -pix_fmts' in 
 your system console or refer to the ffmpeg documentation: https://ffmpeg.org/ffmpeg.html
 
-#### dublicatelastframe
+#### duplicatelastframe
 Duplicates the last frame to the end of the output video.
 
 #### rotation 
@@ -197,7 +197,7 @@ does.
 #variable_fps_min: 5
 #variable_fps_max: 60
 #rotation: 0
-#dublicatelastframe: 0
+#duplicatelastframe: 0
 #previewimage: True
 #saveframes: False
 
