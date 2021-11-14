@@ -59,7 +59,7 @@ function link_extension {
         exit 1
     fi
     if [ -d "${KLIPPER_CONFIG_DIR}" ]; then
-        echo "Linking macro file"
+        echo "Linking macro file..."
         ln -sf "${SRCDIR}/klipper_macro/timelapse.cfg" "${KLIPPER_CONFIG_DIR}/timelapse.cfg"
     else
         echo -e "ERROR: ${KLIPPER_CONFIG_DIR} not found."
