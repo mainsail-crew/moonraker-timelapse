@@ -62,7 +62,7 @@ After=moonraker.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/bin/bash -c 'exec -a timelapse sleep 1'
+ExecStart=/bin/bash -c 'sleep 1'
 ExecStopPost=/usr/sbin/service klipper restart
 ExecStopPost=/usr/sbin/service moonraker restart
 TimeoutStopSec=1s
@@ -78,18 +78,9 @@ EOF
 restart_services()
 {
     echo "Restarting Moonraker..."
-    sudo systemctl restart klipper
+    sudo systemctl restart moonraker
     echo "Restarting Klipper..."
     sudo systemctl restart klipper
-}
-
-# Helper functions
-verify_ready()
-{
-    if [ "$EUID" -eq 0 ]; then
-        echo "This script must not run as root"
-        exit -1
-    fi
 }
 
 # Force script to exit if an error occurs
@@ -108,7 +99,6 @@ done
 # Run steps
 check_klipper
 check_moonraker
-verify_ready
 link_extension
 install_script
 restart_services
