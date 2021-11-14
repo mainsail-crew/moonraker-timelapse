@@ -31,7 +31,7 @@ KLIPPER_CONFIG_DIR="${HOME}/klipper_config"
 
 function check_klipper {
     if [ "$(sudo systemctl list-units --full -all -t service --no-legend | grep -F "klipper.service")" ]; then
-        echo "Klipper service found!\n Stopping during Install."
+        echo "Klipper service found! Stopping during Install."
         sudo systemctl stop klipper
     else
         echo "Klipper service not found, please install Klipper first"
@@ -41,7 +41,7 @@ function check_klipper {
 
 function check_moonraker {
     if [ "$(sudo systemctl list-units --full -all -t service --no-legend | grep -F "moonraker.service")" ]; then
-        echo "Moonraker service found!\n Stopping during Install."
+        echo "Moonraker service found! Stopping during Install."
         sudo systemctl stop moonraker
     else
         echo "Moonraker service not found, please install Moonraker first"
