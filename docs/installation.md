@@ -22,9 +22,9 @@ The script assumes that Klipper is also in your home directory under
 >:point_up: **NOTE:** Currently, there is a dummy systemd service installed
 > to satisfy moonraker's update manager which also restarts Moonraker and Klipper.
 
-## Updating
+## Enable updating with moonraker update manager
 
-This repo can be updated with the update manager of Moonraker. To do so 
+This repo can be updated with the update manager of moonraker. To do so 
 add following to your 'moonraker.conf' 
 
 ```
