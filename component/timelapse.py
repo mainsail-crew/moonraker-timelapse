@@ -447,7 +447,7 @@ class Timelapse:
 
             # prepare output filename
             now = datetime.now()
-            date_time = now.strftime(self.timeformatcode)
+            date_time = now.strftime(self.config['time_format_code'])
             outfile = f"timelapse_{gcodefilename}_{date_time}"
             outfileFull = outfile + "_frames.zip"
 
