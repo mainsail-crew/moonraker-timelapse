@@ -607,7 +607,7 @@ class Timelapse:
                         })
             else:
                 status = "error"
-                msg = f"Rendering Video failed"
+                msg = f"Rendering Video failed: {cmd} : {self.lastcmdreponse}"
                 result.update({
                     'cmd': cmd,
                     'cmdresponse': self.lastcmdreponse
