@@ -192,7 +192,7 @@ class Timelapse:
             snapshoturl = webcamconfig['urlSnapshot']
             flip_x = webcamconfig['flipX']
             flip_y = webcamconfig['flipY']
-            
+
         except Exception:
             pass
         finally:
@@ -200,11 +200,11 @@ class Timelapse:
                                                                snapshoturl
                                                                )
             self.config['flip_x'] = self.confighelper.getboolean('flip_x',
-                                                               flip_x
-                                                               )
+                                                                 flip_x
+                                                                 )
             self.config['flip_y'] = self.confighelper.getboolean('flip_y',
-                                                               flip_y
-                                                               )
+                                                                 flip_y
+                                                                 )
 
         if not self.config['snapshoturl'].startswith('http'):
             if not self.config['snapshoturl'].startswith('/'):
