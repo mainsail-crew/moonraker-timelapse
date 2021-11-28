@@ -617,16 +617,38 @@ class Timelapse:
 
                 # copy image preview
                 if self.config['previewimage']:
-                    previewfile = f"{outfile}.jpg"
+                    previewFile = f"{outfile}.jpg"
+                    previewFilePath = self.out_dir + previewFile
                     previewSrc = filelist[-1:][0]
                     try:
-                        shutil.copy(previewSrc, self.out_dir + previewfile)
+                        shutil.copy(previewSrc, previewFilePath)
                     except OSError as err:
                         logging.info(f"copying preview image failed: {err}")
                     else:
                         result.update({
-                            'previewimage': previewfile
+                            'previewimage': previewFile
                         })
+
+                    # apply rotation previewimage if needed
+                    if filterParam or self.config['extraoutputparams']:
+                        cmd = self.ffmpeg_binary_path \
+                            + " -i '" + previewFilePath + "'" \
+                            + filterParam \
+                            + " -an" \
+                            + " " + self.config['extraoutputparams'] \
+                            + " '" + previewFilePath + "' -y"
+
+                        logging.debug(f"preview image cmd: {cmd}")
+
+                        scmd = shell_cmd.build_shell_command(cmd)
+                        try:
+                            cmdstatus = await scmd.run(verbose=True,
+                                                       log_complete=False,
+                                                       timeout=9999999999,
+                                                       )
+                        except Exception:
+                            logging.exception(f"Error running cmd '{cmd}'")
+
             else:
                 status = "error"
                 msg = f"Rendering Video failed: {cmd} : {self.lastcmdreponse}"
