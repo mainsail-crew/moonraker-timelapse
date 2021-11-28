@@ -88,6 +88,8 @@ class Timelapse:
             'variable_fps_min': 5,
             'variable_fps_max': 60,
             'rotation': 0,
+            'flip_x': False,
+            'flip_y': False,
             'duplicatelastframe': 0,
             'previewimage': True,
             'saveframes': False
@@ -104,7 +106,7 @@ class Timelapse:
         # support the settings endpoint
         self.overwriteDbconfigWithConfighelper()
 
-        self.getsnapshotUrl()
+        self.getwebcamconfig()
 
         # check if ffmpeg is installed
         self.ffmpeg_installed = os.path.isfile(self.ffmpeg_binary_path)
@@ -177,20 +179,31 @@ class Timelapse:
         self.config.update({'blockedsettings': blockedsettings})
         logging.debug(f"blockedsettings {self.config['blockedsettings']}")
 
-    def getsnapshotUrl(self) -> None:
+    def getwebcamconfig(self) -> None:
         database: DBComp = self.server.lookup_component("database")
         snapshoturl = self.config['snapshoturl']
+        flip_x = False
+        flip_y = False
 
         try:
             webcamconfig = database.get_item(
                 "webcams", self.config['camera']
             )
             snapshoturl = webcamconfig['urlSnapshot']
+            flip_x = webcamconfig['flipX']
+            flip_y = webcamconfig['flipY']
+            
         except Exception:
             pass
         finally:
             self.config['snapshoturl'] = self.confighelper.get('snapshoturl',
                                                                snapshoturl
+                                                               )
+            self.config['flip_x'] = self.confighelper.getboolean('flip_x',
+                                                               flip_x
+                                                               )
+            self.config['flip_y'] = self.confighelper.getboolean('flip_y',
+                                                               flip_y
                                                                )
 
         if not self.config['snapshoturl'].startswith('http'):
@@ -256,7 +269,7 @@ class Timelapse:
                     )
 
                     if setting == "camera":
-                        self.getsnapshotUrl()
+                        self.getwebcamconfig()
 
                     if setting in settingsWithGcodechange:
                         gcodechange = True
@@ -477,6 +490,9 @@ class Timelapse:
         self.framecount = len(filelist)
         result = {'action': 'render'}
 
+        # make sure webcamconfig is uptodate for the rotation/flip feature
+        self.getwebcamconfig()
+
         if not filelist:
             msg = "no frames to render, skip"
             status = "skipped"
@@ -532,17 +548,23 @@ class Timelapse:
                 fps = self.config['output_framerate']
 
             # apply rotation
-            rotationParam = ""
+            filterParam = ""
             if self.config['rotation'] > 0:
                 pi = 3.141592653589793
                 rot = str(self.config['rotation']*(pi/180))
-                rotationParam = " -vf rotate=" + rot
+                filterParam = " -vf rotate=" + rot
+            elif self.config['flip_x'] and self.config['flip_y']:
+                filterParam = " -vf 'hflip,vflip'"
+            elif self.config['flip_x']:
+                filterParam = " -vf 'hflip'"
+            elif self.config['flip_y']:
+                filterParam = " -vf 'vflip'"
 
             # build shell command
             cmd = self.ffmpeg_binary_path \
                 + " -r " + str(fps) \
                 + " -i '" + inputfiles + "'" \
-                + rotationParam \
+                + filterParam \
                 + " -threads 2 -g 5" \
                 + " -crf " + str(self.config['constant_rate_factor']) \
                 + " -vcodec libx264" \

@@ -61,8 +61,8 @@ use or render.
 #### camera
 This setting let you choose which camera should be used to take frames from.
 It depends on the 'webcam' namespace in the moonraker DB and uses the
-'snapshoturl' associated whith selected camera. Alternatively you can configure
-'snapshoturl' in the moonraker.conf if your frontend doesn't support the webcam 
+'snapshoturl', 'flipX' and 'flipY' associated whith selected camera. Alternatively you can configure
+'snapshoturl', 'flip_x' and 'flip_y' in the moonraker.conf if your frontend doesn't support the webcams 
 namespace of moonraker DB.
 
 #### gcode_verbose
@@ -143,15 +143,10 @@ your system console or refer to the ffmpeg documentation: https://ffmpeg.org/ffm
 #### duplicatelastframe
 Duplicates the last frame to the end of the output video.
 
-#### rotation 
-Rotates the output video 0-359 degrees. (Unit degree)
-Note: This will be disabled if extraoutputparams are specified.
-
 #### extraoutputparams
 Defines extra output parameters to FFMPEG 
 further info: https://ffmpeg.org/ffmpeg.html 
-Note: Specifing anything here will disable the rotation setting. You can use
-advanced filters to achieve a rotation in combination with other filters though.
+Note: Specifing anything here will maybe disable other features! (ffmpeg limitation)
 
 #### previewImage
 'true' enables or 'false' disables coping the last frame as a preview image to
@@ -196,7 +191,8 @@ does.
 #targetlength: 10
 #variable_fps_min: 5
 #variable_fps_max: 60
-#rotation: 0
+#flip_x: False
+#flip_y: False
 #duplicatelastframe: 0
 #previewimage: True
 #saveframes: False
