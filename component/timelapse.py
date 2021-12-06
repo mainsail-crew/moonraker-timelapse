@@ -49,7 +49,6 @@ class Timelapse:
         self.lastrenderprogress = 0
         self.lastcmdreponse = ""
         self.byrendermacro = False
-        self.macropark = False
 
         # setup static (nonDB) settings
         out_dir_cfg = confighelper.get(
@@ -65,6 +64,7 @@ class Timelapse:
             'mode': "layermacro",
             'camera': "",
             'snapshoturl': "http://localhost:8080/?action=snapshot",
+            'stream_delay_compensation': 0.05,
             'gcode_verbose': True,
             'parkhead': False,
             'parkpos': "back_left",
@@ -76,6 +76,7 @@ class Timelapse:
             'park_extrude_speed': 15,
             'park_retract_distance': 1.0,
             'park_extrude_distance': 1.0,
+            'park_time': 0.1,
             'hyperlapse_cycle': 30,
             'autorender': True,
             'constant_rate_factor': 23,
@@ -315,61 +316,79 @@ class Timelapse:
         if self.config['enabled']:
             if self.config['mode'] == "hyperlapse":
                 if hyperlapse:
-                    self.macropark = macropark
-                    ioloop = IOLoop.current()
-                    ioloop.spawn_callback(self.newframe)
+                    if not self.takingframe:
+                        self.takingframe = True
+                        self.spawn_newframe_callbacks()
+                    else:
+                        logging.info("last take frame hasn't completed"
+                                     + " ignoring take frame command"
+                                     )
                 else:
-                    logging.debug(f"ignoring non hyperlapse triggered macros")
+                    logging.info("ignoring non hyperlapse triggered macros"
+                                 + "in hyperlapse mode"
+                                 )
             else:
-                self.macropark = macropark
-                ioloop = IOLoop.current()
-                ioloop.spawn_callback(self.newframe)
+                if not self.takingframe:
+                    self.takingframe = True
+                    self.spawn_newframe_callbacks()
+                else: 
+                    logging.info("last take frame hasn't completed"
+                                 + " ignoring take frame command"
+                                 )
         else:
-            logging.debug("NEW_FRAME macro ignored timelapse is disabled")
+            logging.info("NEW_FRAME macro ignored timelapse is disabled")
+
+    def spawn_newframe_callbacks(self) -> None:
+        ioloop = IOLoop.current()
+        # release parked head after park time is passed
+        park_time = self.config['park_time']
+        ioloop.call_later(delay=park_time, callback=self.release_parkedhead)
+        # capture the frame after stream delay is passed
+        stream_delay = self.config['stream_delay_compensation']
+        ioloop.call_later(delay=stream_delay, callback=self.newframe)
+
+    async def release_parkedhead(self) -> None:
+        gcommand = "SET_GCODE_VARIABLE " \
+            + "MACRO=TIMELAPSE_TAKE_FRAME " \
+            + "VARIABLE=takingframe VALUE=False"
+
+        logging.debug(f"run gcommand: {gcommand}")
+        try:
+            await self.klippy_apis.run_gcode(gcommand)
+        except self.server.error:
+            msg = f"Error executing GCode {gcommand}"
+            logging.exception(msg)
 
     async def newframe(self) -> None:
-        if not self.takingframe:
-            self.takingframe = True
-            self.framecount += 1
-            snapshoturl = self.config['snapshoturl']
-            framefile = "frame" + str(self.framecount).zfill(6) + ".jpg"
-            cmd = "wget " + snapshoturl + " -O " \
-                  + self.temp_dir + framefile
-            self.lastframefile = framefile
-            logging.debug(f"cmd: {cmd}")
+        self.framecount += 1
+        snapshoturl = self.config['snapshoturl']
+        framefile = "frame" + str(self.framecount).zfill(6) + ".jpg"
+        cmd = "wget " + snapshoturl + " -O " \
+              + self.temp_dir + framefile
+        self.lastframefile = framefile
+        logging.debug(f"cmd: {cmd}")
 
-            shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
-            scmd = shell_cmd.build_shell_command(cmd, None)
-            try:
-                cmdstatus = await scmd.run(timeout=2., verbose=False)
-            except Exception:
-                logging.exception(f"Error running cmd '{cmd}'")
+        shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
+        scmd = shell_cmd.build_shell_command(cmd, None)
+        try:
+            cmdstatus = await scmd.run(timeout=2., verbose=False)
+        except Exception:
+            logging.exception(f"Error running cmd '{cmd}'")
 
-            result = {'action': 'newframe'}
-            if cmdstatus:
-                result.update({
-                    'frame': str(self.framecount),
-                    'framefile': framefile,
-                    'status': 'success'
-                })
-            else:
-                logging.info(f"getting newframe failed: {cmd}")
-                self.framecount -= 1
-                result.update({'status': 'error'})
+        result = {'action': 'newframe'}
+        if cmdstatus:
+            result.update({
+                'frame': str(self.framecount),
+                'framefile': framefile,
+                'status': 'success'
+            })
+        else:
+            logging.info(f"getting newframe failed: {cmd}")
+            self.framecount -= 1
+            result.update({'status': 'error'})
 
-            self.notify_event(result)
-            self.takingframe = False
-
-            gcommand = "SET_GCODE_VARIABLE " \
-                + "MACRO=TIMELAPSE_TAKE_FRAME " \
-                + "VARIABLE=takingframe VALUE=False"
-
-            logging.debug(f"run gcommand: {gcommand}")
-            try:
-                await self.klippy_apis.run_gcode(gcommand)
-            except self.server.error:
-                msg = f"Error executing GCode {gcommand}"
-                logging.exception(msg)
+        self.notify_event(result)
+        self.takingframe = False
 
     async def handle_status_update(self, status: Dict[str, Any]) -> None:
         if 'print_stats' in status:
