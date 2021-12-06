@@ -331,7 +331,7 @@ class Timelapse:
                 if not self.takingframe:
                     self.takingframe = True
                     self.spawn_newframe_callbacks()
-                else: 
+                else:
                     logging.info("last take frame hasn't completed"
                                  + " ignoring take frame command"
                                  )
