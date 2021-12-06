@@ -79,13 +79,13 @@ Possible configurations are [center, front_left, front_right, back_left, back_ri
 If you like to define a custom parkposition of your printhead.
 
 ##### park_custom_pos_x
-Absolut X coordinates of the custom parkposition (Unit [mm])
+Absolut X coordinates of the custom parkposition (Unit mm)
 
 ##### park_custom_pos_y
-Absolut Y coordinates of the custom parkposition (Unit [mm])
+Absolut Y coordinates of the custom parkposition (Unit mm)
 
 ##### park_custom_pos_dz
-Relative Y coordinates of the custom parkposition (Unit [mm])
+Relative Y coordinates of the custom parkposition (Unit mm)
         
 #### park_travel_speed
 Speed of the printhead movement while parking (Unit mm/s)
@@ -101,6 +101,12 @@ Distance to retract the filament to prevent oozing (Unit mm)
 
 #### park_extrude_distance
 Distance to extrude to fill the nozzle before resuming the print (Unit mm)
+
+#### park_time
+add additional idle time when parking (Unit seconds, default 0.1)
+
+#### stream_delay_compensation
+delay frame capture (Unit seconds, default 0.05)
 
 ### Render specific
 
