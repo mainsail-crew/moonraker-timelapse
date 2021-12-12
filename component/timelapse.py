@@ -244,7 +244,7 @@ class Timelapse:
                 'park_custom_pos_y', 'park_custom_pos_dz',
                 'park_travel_speed', 'park_retract_speed',
                 'park_extrude_speed', 'park_retract_distance',
-                'park_extrude_distance', 'park_time', 'fw_retract' 
+                'park_extrude_distance', 'park_time', 'fw_retract'
             ]
 
             for setting in args:
