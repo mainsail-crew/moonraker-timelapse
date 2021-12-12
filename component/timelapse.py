@@ -77,6 +77,7 @@ class Timelapse:
             'park_retract_distance': 1.0,
             'park_extrude_distance': 1.0,
             'park_time': 0.1,
+            'fw_retract': False,
             'hyperlapse_cycle': 30,
             'autorender': True,
             'constant_rate_factor': 23,
@@ -243,7 +244,7 @@ class Timelapse:
                 'park_custom_pos_y', 'park_custom_pos_dz',
                 'park_travel_speed', 'park_retract_speed',
                 'park_extrude_speed', 'park_retract_distance',
-                'park_extrude_distance'
+                'park_extrude_distance', 'park_time', 'fw_retract' 
             ]
 
             for setting in args:
@@ -304,6 +305,8 @@ class Timelapse:
             + f" EXTRUDE_SPEED={self.config['park_extrude_speed']}" \
             + f" RETRACT_DISTANCE={self.config['park_retract_distance']}" \
             + f" EXTRUDE_DISTANCE={self.config['park_extrude_distance']}" \
+            + f" PARK_TIME={self.config['park_time']}" \
+            + f" FW_RETRACT={self.config['fw_retract']}" \
 
         logging.debug(f"run gcommand: {gcommand}")
         try:
