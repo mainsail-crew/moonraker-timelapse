@@ -1,7 +1,7 @@
 # Contributing to Moonraker / Moonraker-timelapse
 
 While the moonraker-timelapse component exists independently from Moonraker,
-it hooks into Moonraker as a Component. As such, contibuting guidelines are the 
+it hooks into Moonraker as a Component. As such, contributing guidelines are the 
 same as those of Moonraker:
 
 - All source files should begin with a copyright notice in the following
