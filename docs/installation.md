@@ -16,11 +16,18 @@ bash ~/moonraker-timelapse/install.sh
 
 This will clone the repository and execute the installer script.
 
-The script assumes that Klipper is also in your home directory under
-"klipper": `${HOME}/klipper` and "moonraker": `${HOME}\moonraker`.
+> **NOTE:** The script assumes that Klipper is in your home directory under
+> "klipper": `${HOME}/klipper` and "moonraker": `${HOME}\moonraker`.
 
->:point_up: **NOTE:** Currently, there is a dummy systemd service installed
+> **NOTE:** Currently, there is a dummy systemd service installed
 > to satisfy moonraker's update manager which also restarts Moonraker and Klipper.
+
+> **NOTE:** Render functionality depends on ffmpeg in '/usr/bin/ffmpeg'. 
+> MainsailOS and fluiddPi have it installed there already. If you setup your OS
+> manually you need to install ffmpeg manually too, to use the render function!
+> To do so run: `sudo apt install ffmpeg`. If you have installed ffmpeg in a different
+> directory you can specify the 'ffmpeg_binary_path' in moonraker.conf in the 
+> [timelapse] section
 
 ## Enable updating with moonraker update manager
 
