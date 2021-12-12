@@ -2,7 +2,7 @@
 # Moonraker Timelapse component installer
 #
 # Copyright (C) 2021 Christoph Frei <fryakatkop@gmail.com>
-# Slightly modified by Stephan Wendel aka KwadFan <me@stephanwe.de>
+# Copyright (C) 2021 Stephan Wendel aka KwadFan <me@stephanwe.de>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 #
@@ -27,9 +27,15 @@ SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/ && pwd )"
 MOONRAKER_TARGET_DIR="${HOME}/moonraker/moonraker/components"
 SYSTEMDDIR="/etc/systemd/system"
 KLIPPER_CONFIG_DIR="${HOME}/klipper_config"
+FFMPEG_BIN="/usr/bin/ffmpegd"
 
+# Define text colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-function check_klipper {
+function stop_klipper {
     if [ "$(sudo systemctl list-units --full -all -t service --no-legend | grep -F "klipper.service")" ]; then
         echo "Klipper service found! Stopping during Install."
         sudo systemctl stop klipper
@@ -39,7 +45,7 @@ function check_klipper {
     fi
 }
 
-function check_moonraker {
+function stop_moonraker {
     if [ "$(sudo systemctl list-units --full -all -t service --no-legend | grep -F "moonraker.service")" ]; then
         echo "Moonraker service found! Stopping during Install."
         sudo systemctl stop moonraker
@@ -106,6 +112,16 @@ function restart_services {
     sudo systemctl restart klipper
 }
 
+
+function check_ffmpeg {
+
+    if [ ! -f "$FFMPEG_BIN" ]; then
+        echo -e "${YELLOW}WARNING:${NC} FFMPEG not found in '${FFMPEG_BIN}'. Render will not be possible!\nPlease install FFMPEG running:\n\n  sudo apt install ffmpeg\n\nor specify 'ffmpeg_binary_path' in moonraker.conf in the [timelapse] section if ffmpeg is installed in a different directory, to use render functionality"
+	fi
+
+}
+
+
 ### MAIN
 
 # Parse command line arguments
@@ -126,11 +142,12 @@ while getopts "c:h" arg; do
 done
 
 # Run steps
-check_klipper
-check_moonraker
+stop_klipper
+stop_moonraker
 link_extension
 install_script
 restart_services
+check_ffmpeg
 
 # If something checks status of install
 exit 0
