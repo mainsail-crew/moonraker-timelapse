@@ -217,8 +217,8 @@ Include the macro file to your printer.cfg
 ## Slicer Setup
 To use the "layermacro" mode which grabs a frame every layerchange you need to
 add the ``TIMELAPSE_TAKE_FRAME`` macro to your slicer so that it is added to
-the Gcode before or after a layer change. If your slicer do not support adding
-Gcode to a layerchange you are limited to timebased "hyperlapse" mode.
+the Gcode before or after a layer change. If your slicer does not support adding
+Gcode to a layerchange you are limited to the timebased "hyperlapse" mode.
 
 ### Prusa Slicer / Super Slicer
 Printer Settings -> Custom G-code -> Before layer change Gcode -> ``TIMELAPSE_TAKE_FRAME``
