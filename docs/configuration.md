@@ -102,6 +102,10 @@ Distance to retract the filament to prevent oozing (Unit mm)
 #### park_extrude_distance
 Distance to extrude to fill the nozzle before resuming the print (Unit mm)
 
+#### fw_retract
+'true' enables or 'false' disables use of firmware retraction in the macro.
+Note: Enabling this will disable retract related settings!
+
 #### park_time
 add additional idle time when parking (Unit seconds, default 0.1)
 
