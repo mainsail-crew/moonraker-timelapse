@@ -27,7 +27,7 @@ SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/ && pwd )"
 MOONRAKER_TARGET_DIR="${HOME}/moonraker/moonraker/components"
 SYSTEMDDIR="/etc/systemd/system"
 KLIPPER_CONFIG_DIR="${HOME}/klipper_config"
-FFMPEG_BIN="/usr/bin/ffmpegd"
+FFMPEG_BIN="/usr/bin/ffmpeg"
 
 # Define text colors
 RED='\033[0;31m'
