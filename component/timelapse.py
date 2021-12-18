@@ -49,6 +49,8 @@ class Timelapse:
         self.lastrenderprogress = 0
         self.lastcmdreponse = ""
         self.byrendermacro = False
+        self.hyperlapserunning = False
+        self.printing = False
 
         # setup static (nonDB) settings
         out_dir_cfg = confighelper.get(
@@ -246,6 +248,7 @@ class Timelapse:
                 'park_extrude_speed', 'park_retract_distance',
                 'park_extrude_distance', 'park_time', 'fw_retract'
             ]
+            modechanged = False
 
             for setting in args:
                 if setting in self.config:
@@ -276,11 +279,24 @@ class Timelapse:
                     if setting in settingsWithGcodechange:
                         gcodechange = True
 
+                    if setting == "mode":
+                        modechanged = True
+
                     logging.debug(f"changed setting: {setting} "
                                   f"value: {settingvalue} "
                                   f"type: {settingtype}"
                                   )
 
+            if modechanged:
+                if self.config['mode'] == "hyperlapse":
+                    if not self.hyperlapserunning:
+                        if self.printing:
+                            ioloop = IOLoop.current()
+                            ioloop.spawn_callback(self.start_hyperlapse)
+                else:
+                    if self.hyperlapserunning:
+                        ioloop = IOLoop.current()
+                        ioloop.spawn_callback(self.stop_hyperlapse)
             if gcodechange:
                 ioloop = IOLoop.current()
                 ioloop.spawn_callback(self.setgcodevariables)
@@ -290,6 +306,9 @@ class Timelapse:
     async def handle_klippy_ready(self) -> None:
         ioloop = IOLoop.current()
         ioloop.spawn_callback(self.setgcodevariables)
+
+        ioloop = IOLoop.current()
+        ioloop.spawn_callback(self.stop_hyperlapse)
 
     async def setgcodevariables(self) -> None:
         gcommand = "_SET_TIMELAPSE_SETUP " \
@@ -362,6 +381,29 @@ class Timelapse:
             msg = f"Error executing GCode {gcommand}"
             logging.exception(msg)
 
+    async def start_hyperlapse(self) -> None:
+        gcommand = "HYPERLAPSE ACTION=START" \
+                   + f" CYCLE={self.config['hyperlapse_cycle']}"
+
+        logging.debug(f"run gcommand: {gcommand}")
+        try:
+            await self.klippy_apis.run_gcode(gcommand)
+        except self.server.error:
+            msg = f"Error executing GCode {gcommand}"
+            logging.exception(msg)
+        self.hyperlapserunning = True
+
+    async def stop_hyperlapse(self) -> None:
+        gcommand = "HYPERLAPSE ACTION=STOP"
+
+        logging.debug(f"run gcommand: {gcommand}")
+        try:
+            await self.klippy_apis.run_gcode(gcommand)
+        except self.server.error:
+            msg = f"Error executing GCode {gcommand}"
+            logging.exception(msg)
+        self.hyperlapserunning = False
+
     async def newframe(self) -> None:
         self.framecount += 1
         snapshoturl = self.config['snapshoturl']
@@ -399,50 +441,34 @@ class Timelapse:
             if 'state' in printstats:
                 state = printstats['state']
                 if state == 'cancelled':
-                    gcommand = "HYPERLAPSE ACTION=STOP"
-
-                    logging.debug(f"run gcommand: {gcommand}")
-                    try:
-                        await self.klippy_apis.run_gcode(gcommand)
-                    except self.server.error:
-                        msg = f"Error executing GCode {gcommand}"
-                        logging.exception(msg)
+                    self.printing = False
+                    ioloop = IOLoop.current()
+                    ioloop.spawn_callback(self.stop_hyperlapse)
 
     async def handle_gcode_response(self, gresponse: str) -> None:
         if gresponse == "File selected":
             # print_started
             self.cleanup()
+            self.printing = True
 
             # start hyperlapse if mode is set
             if self.config['mode'] == "hyperlapse":
-                gcommand = "HYPERLAPSE ACTION=START" \
-                    + f" CYCLE={self.config['hyperlapse_cycle']}"
-
-                logging.debug(f"run gcommand: {gcommand}")
-                try:
-                    await self.klippy_apis.run_gcode(gcommand)
-                except self.server.error:
-                    msg = f"Error executing GCode {gcommand}"
-                    logging.exception(msg)
+                ioloop = IOLoop.current()
+                ioloop.spawn_callback(self.start_hyperlapse)
 
         elif gresponse == "Done printing file":
             # print_done
+            self.printing = False
+
+            # stop hyperlapse if mode is set
+            if self.config['mode'] == "hyperlapse":
+                ioloop = IOLoop.current()
+                ioloop.spawn_callback(self.stop_hyperlapse)
+
             if self.config['enabled']:
-                # stop hyperlapse if mode is set
-                if self.config['mode'] == "hyperlapse":
-                    gcommand = "HYPERLAPSE ACTION=STOP"
-
-                    logging.debug(f"run gcommand: {gcommand}")
-                    try:
-                        await self.klippy_apis.run_gcode(gcommand)
-                    except self.server.error:
-                        msg = f"Error executing GCode {gcommand}"
-                        logging.exception(msg)
-
                 if self.config['saveframes']:
                     ioloop = IOLoop.current()
                     ioloop.spawn_callback(self.saveFramesZip)
-
                 if self.config['autorender']:
                     ioloop = IOLoop.current()
                     ioloop.spawn_callback(self.render)
