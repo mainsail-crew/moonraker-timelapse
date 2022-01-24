@@ -34,7 +34,7 @@ This helps if you have macros setup in your slicer but like to manually
 skip timelapse for a print.
 
 #### mode
-At the moment there are to modes available 'layermacro' and 'hyperlapse'
+At the moment there are two modes available 'layermacro' and 'hyperlapse'
 
 ##### layermacro 
 This mode uses a macro to trigger frame grabbing, but needs the slicer to be setup
