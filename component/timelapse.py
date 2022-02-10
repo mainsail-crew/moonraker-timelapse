@@ -103,7 +103,10 @@ class Timelapse:
         dbconfig: Dict[str, Any] = database.get_item(
             "timelapse", "config", self.config
         )
-        self.config.update(dbconfig)
+        if hasattr(Dict, 'result'):
+            self.config.update(dbconfig.result())
+        else:
+            self.config.update(dbconfig)
 
         # Overwrite Config with fixed config made in moonraker.conf
         # this is a fallback to older setups and when the Frontend doesn't
