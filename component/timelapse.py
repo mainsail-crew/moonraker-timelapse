@@ -9,6 +9,7 @@ import os
 import glob
 import re
 import shutil
+import asyncio
 from datetime import datetime
 from tornado.ioloop import IOLoop
 from zipfile import ZipFile
@@ -38,7 +39,11 @@ class Timelapse:
         self.confighelper = confighelper
         self.server = confighelper.get_server()
         self.klippy_apis: APIComp = self.server.lookup_component('klippy_apis')
-        database: DBComp = self.server.lookup_component("database")
+        self.database: DBComp = self.server.lookup_component("database")
+        try:
+            self.webcams_db = self.database.wrap_namespace("webcams")
+        except Exception:
+            pass
 
         # setup vars
         self.renderisrunning = False
@@ -100,10 +105,10 @@ class Timelapse:
         }
 
         # Get Config from Database and overwrite defaults
-        dbconfig: Dict[str, Any] = database.get_item(
-            "timelapse", "config", self.config
-        )
-        if hasattr(Dict, 'result'):
+        dbconfig: Dict[str, Any] = self.database.get_item("timelapse",
+                                                          "config",
+                                                          self.config)
+        if isinstance(dbconfig, asyncio.Future):
             self.config.update(dbconfig.result())
         else:
             self.config.update(dbconfig)
@@ -113,7 +118,14 @@ class Timelapse:
         # support the settings endpoint
         self.overwriteDbconfigWithConfighelper()
 
-        self.getwebcamconfig()
+        # Read Webcam config from Database
+        if not self.config['camera'] == '':
+            webcamconfig = self.webcams_db[self.config['camera']]
+            if isinstance(webcamconfig, asyncio.Future):
+                self.getwebcamconfig(webcamconfig.result())
+            else:
+                self.getwebcamconfig(webcamconfig)
+        logging.debug(f"snapshoturlConfig: {self.config['snapshoturl']}")
 
         # check if ffmpeg is installed
         self.ffmpeg_installed = os.path.isfile(self.ffmpeg_binary_path)
@@ -186,32 +198,20 @@ class Timelapse:
         self.config.update({'blockedsettings': blockedsettings})
         logging.debug(f"blockedsettings {self.config['blockedsettings']}")
 
-    def getwebcamconfig(self) -> None:
-        database: DBComp = self.server.lookup_component("database")
-        snapshoturl = self.config['snapshoturl']
-        flip_x = False
-        flip_y = False
+    def getwebcamconfig(self, webcamconfig) -> None:
+        snapshoturl = webcamconfig['urlSnapshot']
+        flip_x = webcamconfig['flipX']
+        flip_y = webcamconfig['flipY']
 
-        try:
-            webcamconfig = database.get_item(
-                "webcams", self.config['camera']
-            )
-            snapshoturl = webcamconfig['urlSnapshot']
-            flip_x = webcamconfig['flipX']
-            flip_y = webcamconfig['flipY']
-
-        except Exception:
-            pass
-        finally:
-            self.config['snapshoturl'] = self.confighelper.get('snapshoturl',
-                                                               snapshoturl
-                                                               )
-            self.config['flip_x'] = self.confighelper.getboolean('flip_x',
-                                                                 flip_x
-                                                                 )
-            self.config['flip_y'] = self.confighelper.getboolean('flip_y',
-                                                                 flip_y
-                                                                 )
+        self.config['snapshoturl'] = self.confighelper.get('snapshoturl',
+                                                           snapshoturl
+                                                           )
+        self.config['flip_x'] = self.confighelper.getboolean('flip_x',
+                                                             flip_x
+                                                             )
+        self.config['flip_y'] = self.confighelper.getboolean('flip_y',
+                                                             flip_y
+                                                             )
 
         if not self.config['snapshoturl'].startswith('http'):
             if not self.config['snapshoturl'].startswith('/'):
@@ -220,9 +220,6 @@ class Timelapse:
             else:
                 self.config['snapshoturl'] = "http://localhost" + \
                                              self.config['snapshoturl']
-
-        # logging.debug(f"snapshoturl: {snapshoturl}")
-        logging.debug(f"snapshoturlConfig: {self.config['snapshoturl']}")
 
     async def webrequest_lastframeinfo(self,
                                        webrequest: WebRequest
@@ -237,7 +234,6 @@ class Timelapse:
                                   ) -> Dict[str, Any]:
         action = webrequest.get_action()
         if action == 'POST':
-            database: DBComp = self.server.lookup_component("database")
 
             args = webrequest.get_args()
             logging.debug("webreq_args: " + str(args))
@@ -270,14 +266,21 @@ class Timelapse:
 
                     self.config[setting] = settingvalue
 
-                    database.insert_item(
+                    self.database.insert_item(
                         "timelapse",
                         f"config.{setting}",
                         settingvalue
                     )
 
                     if setting == "camera":
-                        self.getwebcamconfig()
+                        webcamconfig = self.webcams_db[self.config['camera']]
+                        if isinstance(webcamconfig, asyncio.Future):
+                            self.getwebcamconfig(await webcamconfig)
+                        else:
+                            self.getwebcamconfig(webcamconfig)
+
+                        logging.debug("snapshoturlConfig:"
+                                      f"{self.config['snapshoturl']}")
 
                     if setting in settingsWithGcodechange:
                         gcodechange = True
