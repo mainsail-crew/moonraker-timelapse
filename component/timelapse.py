@@ -72,7 +72,7 @@ class Timelapse:
             'camera': "",
             'snapshoturl': "http://localhost:8080/?action=snapshot",
             'stream_delay_compensation': 0.05,
-            'gcode_verbose': True,
+            'gcode_verbose': False,
             'parkhead': False,
             'parkpos': "back_left",
             'park_custom_pos_x': 0.0,
