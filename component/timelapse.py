@@ -411,10 +411,19 @@ class Timelapse:
         self.hyperlapserunning = False
 
     async def newframe(self) -> None:
+        # make sure webcamconfig is uptodate before grabbing a new frame
+        webcamconfig = self.webcams_db[self.config['camera']]
+        if isinstance(webcamconfig, asyncio.Future):
+            self.getwebcamconfig(await webcamconfig)
+        else:
+            self.getwebcamconfig(webcamconfig)
+
+        logging.debug("snapshoturlConfig:"
+                      f"{self.config['snapshoturl']}")
+
         self.framecount += 1
-        snapshoturl = self.config['snapshoturl']
         framefile = "frame" + str(self.framecount).zfill(6) + ".jpg"
-        cmd = "wget " + snapshoturl + " -O " \
+        cmd = "wget " + self.config['snapshoturl'] + " -O " \
               + self.temp_dir + framefile
         self.lastframefile = framefile
         logging.debug(f"cmd: {cmd}")
@@ -545,7 +554,16 @@ class Timelapse:
         result = {'action': 'render'}
 
         # make sure webcamconfig is uptodate for the rotation/flip feature
-        self.getwebcamconfig()
+        webcamconfig = self.webcams_db[self.config['camera']]
+        if isinstance(webcamconfig, asyncio.Future):
+            self.getwebcamconfig(await webcamconfig)
+        else:
+            self.getwebcamconfig(webcamconfig)
+
+        logging.debug("flip x/y:"
+                      f"{self.config['flip_x']}/"
+                      f"{self.config['flip_y']}/"
+                      )
 
         if not filelist:
             msg = "no frames to render, skip"
