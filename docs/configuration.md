@@ -3,6 +3,39 @@ references configuration for both Klipper (`printer.cfg`) and Moonraker
 (`moonraker.conf`), each example contains a commment indicating which
 configuration file is being refrenenced. 
 
+### Define the Gcode Macro
+Include the macro file to your printer.cfg
+```ini
+# printer.cfg
+
+[include timelapse.cfg]
+
+```
+
+## Slicer Setup
+To use the "layermacro" mode which grabs a frame every layerchange you need to
+add the ``TIMELAPSE_TAKE_FRAME`` macro to your slicer so that it is added to
+the Gcode before or after a layer change. If your slicer does not support adding
+Gcode to a layerchange you are limited to the timebased "hyperlapse" mode.
+
+### Prusa Slicer / Super Slicer
+Printer Settings -> Custom G-code -> Before layer change Gcode -> ``TIMELAPSE_TAKE_FRAME``
+
+![PrusaSlicer Configuration](assets/img/timelapse-PS-config.png)
+
+### Ultimaker Cura
+Extensions -> Post Processing -> Modify G-Code ->   
+Add a script -> Insert at layer change -> G-code to insert = ``TIMELAPSE_TAKE_FRAME``
+
+![Cura Configuration](assets/img/timelapse-cura-config.png)
+
+
+### Ideamaker
+Advanced Settings -> Gcode -> Layer Change Gcode -> ``TIMELAPSE_TAKE_FRAME``
+
+![Cura Configuration](assets/img/timelapse-ideamaker-config.png)
+(Credits to Vez3d for the screenshot)
+
 ## Activate the Component
 ```ini
 # moonraker.conf
@@ -208,40 +241,6 @@ does.
 #saveframes: False
 
 ```
-
-### Define the Gcode Macro
-Include the macro file to your printer.cfg
-```ini
-# printer.cfg
-
-[include timelapse.cfg]
-
-```
-
-## Slicer Setup
-To use the "layermacro" mode which grabs a frame every layerchange you need to
-add the ``TIMELAPSE_TAKE_FRAME`` macro to your slicer so that it is added to
-the Gcode before or after a layer change. If your slicer does not support adding
-Gcode to a layerchange you are limited to the timebased "hyperlapse" mode.
-
-### Prusa Slicer / Super Slicer
-Printer Settings -> Custom G-code -> Before layer change Gcode -> ``TIMELAPSE_TAKE_FRAME``
-
-![PrusaSlicer Configuration](assets/img/timelapse-PS-config.png)
-
-### Ultimaker Cura
-Extensions -> Post Processing -> Modify G-Code ->   
-Add a script -> Insert at layer change -> G-code to insert = ``TIMELAPSE_TAKE_FRAME``
-
-![Cura Configuration](assets/img/timelapse-cura-config.png)
-
-
-### Ideamaker
-Advanced Settings -> Gcode -> Layer Change Gcode -> ``TIMELAPSE_TAKE_FRAME``
-
-![Cura Configuration](assets/img/timelapse-ideamaker-config.png)
-(Credits to Vez3d for the screenshot)
-
 
 ## Change the Resolution of your Camera
 You may want to change your Timelapse to a higher resolution, you
