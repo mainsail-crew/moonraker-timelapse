@@ -119,7 +119,7 @@ class Timelapse:
         self.overwriteDbconfigWithConfighelper()
 
         # Read Webcam config from Database
-        if not self.config['camera'] == '':
+        if not self.config['camera'] == '' and self.webcams_db:
             webcamconfig = self.webcams_db[self.config['camera']]
             if isinstance(webcamconfig, asyncio.Future):
                 self.getwebcamconfig(webcamconfig.result())
@@ -272,7 +272,7 @@ class Timelapse:
                         settingvalue
                     )
 
-                    if setting == "camera":
+                    if setting == "camera" and self.webcams_db:
                         webcamconfig = self.webcams_db[self.config['camera']]
                         if isinstance(webcamconfig, asyncio.Future):
                             self.getwebcamconfig(await webcamconfig)
@@ -412,11 +412,12 @@ class Timelapse:
 
     async def newframe(self) -> None:
         # make sure webcamconfig is uptodate before grabbing a new frame
-        webcamconfig = self.webcams_db[self.config['camera']]
-        if isinstance(webcamconfig, asyncio.Future):
-            self.getwebcamconfig(await webcamconfig)
-        else:
-            self.getwebcamconfig(webcamconfig)
+        if not self.config['camera'] == '' and self.webcams_db:
+            webcamconfig = self.webcams_db[self.config['camera']]
+            if isinstance(webcamconfig, asyncio.Future):
+                self.getwebcamconfig(await webcamconfig)
+            else:
+                self.getwebcamconfig(webcamconfig)
 
         logging.debug("snapshoturlConfig:"
                       f"{self.config['snapshoturl']}")
@@ -554,11 +555,12 @@ class Timelapse:
         result = {'action': 'render'}
 
         # make sure webcamconfig is uptodate for the rotation/flip feature
-        webcamconfig = self.webcams_db[self.config['camera']]
-        if isinstance(webcamconfig, asyncio.Future):
-            self.getwebcamconfig(await webcamconfig)
-        else:
-            self.getwebcamconfig(webcamconfig)
+        if not self.config['camera'] == '' and self.webcams_db:
+            webcamconfig = self.webcams_db[self.config['camera']]
+            if isinstance(webcamconfig, asyncio.Future):
+                self.getwebcamconfig(await webcamconfig)
+            else:
+                self.getwebcamconfig(webcamconfig)
 
         logging.debug("flip x/y:"
                       f"{self.config['flip_x']}/"
