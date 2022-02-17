@@ -36,15 +36,6 @@ class Timelapse:
 
     def __init__(self, confighelper: ConfigHelper) -> None:
 
-        self.confighelper = confighelper
-        self.server = confighelper.get_server()
-        self.klippy_apis: APIComp = self.server.lookup_component('klippy_apis')
-        self.database: DBComp = self.server.lookup_component("database")
-        try:
-            self.webcams_db = self.database.wrap_namespace("webcams")
-        except Exception:
-            pass
-
         # setup vars
         self.renderisrunning = False
         self.saveisrunning = False
@@ -56,6 +47,18 @@ class Timelapse:
         self.byrendermacro = False
         self.hyperlapserunning = False
         self.printing = False
+        self.noWebcamDb = False
+
+        self.confighelper = confighelper
+        self.server = confighelper.get_server()
+        self.klippy_apis: APIComp = self.server.lookup_component('klippy_apis')
+        self.database: DBComp = self.server.lookup_component("database")
+        try:
+            self.webcams_db = self.database.wrap_namespace("webcams")
+        except Exception as e:
+            self.noWebcamDb = True
+            logging.info(f"No 'Webcams' namespace in database! "
+                         f"Exception: {e}")
 
         # setup static (nonDB) settings
         out_dir_cfg = confighelper.get(
@@ -119,13 +122,19 @@ class Timelapse:
         self.overwriteDbconfigWithConfighelper()
 
         # Read Webcam config from Database
-        if not self.config['camera'] == '':
-            webcamconfig = self.webcams_db[self.config['camera']]
-            if isinstance(webcamconfig, asyncio.Future):
-                self.getwebcamconfig(webcamconfig.result())
-            else:
-                self.getwebcamconfig(webcamconfig)
-        logging.debug(f"snapshoturlConfig: {self.config['snapshoturl']}")
+        try:
+            camUUID = self.config['camera']
+            if not self.config['camera'] == "" and not self.noWebcamDb:
+                webcamconfig = self.webcams_db[camUUID]
+                if isinstance(webcamconfig, asyncio.Future):
+                    self.parseWebcamConfig(webcamconfig.result())
+                else:
+                    self.parseWebcamConfig(webcamconfig)
+
+        except Exception as e:
+            logging.info(f"something went wrong getting Cam"
+                         f" UUID:'{camUUID}' from Database. "
+                         f"Exception: {e}")
 
         # check if ffmpeg is installed
         self.ffmpeg_installed = os.path.isfile(self.ffmpeg_binary_path)
@@ -198,7 +207,22 @@ class Timelapse:
         self.config.update({'blockedsettings': blockedsettings})
         logging.debug(f"blockedsettings {self.config['blockedsettings']}")
 
-    def getwebcamconfig(self, webcamconfig) -> None:
+    async def getWebcamConfig(self) -> None:
+        try:
+            camUUID = self.config['camera']
+            if not self.config['camera'] == "" and not self.noWebcamDb:
+                webcamconfig = self.webcams_db[camUUID]
+                if isinstance(webcamconfig, asyncio.Future):
+                    self.parseWebcamConfig(await webcamconfig)
+                else:
+                    self.parseWebcamConfig(webcamconfig)
+
+        except Exception as e:
+            logging.info(f"something went wrong getting"
+                         f"Cam UUID:{camUUID} from Database. "
+                         f"Exception: {e}")
+
+    def parseWebcamConfig(self, webcamconfig) -> None:
         snapshoturl = webcamconfig['urlSnapshot']
         flip_x = webcamconfig['flipX']
         flip_y = webcamconfig['flipY']
@@ -212,6 +236,13 @@ class Timelapse:
         self.config['flip_y'] = self.confighelper.getboolean('flip_y',
                                                              flip_y
                                                              )
+        logging.debug("snapshoturlConfig:"
+                      f"{self.config['snapshoturl']}")
+
+        logging.debug("flip x/y: "
+                      f"{self.config['flip_x']}/"
+                      f"{self.config['flip_y']}"
+                      )
 
         if not self.config['snapshoturl'].startswith('http'):
             if not self.config['snapshoturl'].startswith('/'):
@@ -273,14 +304,11 @@ class Timelapse:
                     )
 
                     if setting == "camera":
-                        webcamconfig = self.webcams_db[self.config['camera']]
-                        if isinstance(webcamconfig, asyncio.Future):
-                            self.getwebcamconfig(await webcamconfig)
+                        if not self.noWebcamDb:
+                            await self.getWebcamConfig()
                         else:
-                            self.getwebcamconfig(webcamconfig)
-
-                        logging.debug("snapshoturlConfig:"
-                                      f"{self.config['snapshoturl']}")
+                            logging.info("Webcam Namespace not intialized, "
+                                         "please restart moonraker service!")
 
                     if setting in settingsWithGcodechange:
                         gcodechange = True
@@ -412,14 +440,7 @@ class Timelapse:
 
     async def newframe(self) -> None:
         # make sure webcamconfig is uptodate before grabbing a new frame
-        webcamconfig = self.webcams_db[self.config['camera']]
-        if isinstance(webcamconfig, asyncio.Future):
-            self.getwebcamconfig(await webcamconfig)
-        else:
-            self.getwebcamconfig(webcamconfig)
-
-        logging.debug("snapshoturlConfig:"
-                      f"{self.config['snapshoturl']}")
+        await self.getWebcamConfig()
 
         self.framecount += 1
         framefile = "frame" + str(self.framecount).zfill(6) + ".jpg"
@@ -554,16 +575,7 @@ class Timelapse:
         result = {'action': 'render'}
 
         # make sure webcamconfig is uptodate for the rotation/flip feature
-        webcamconfig = self.webcams_db[self.config['camera']]
-        if isinstance(webcamconfig, asyncio.Future):
-            self.getwebcamconfig(await webcamconfig)
-        else:
-            self.getwebcamconfig(webcamconfig)
-
-        logging.debug("flip x/y:"
-                      f"{self.config['flip_x']}/"
-                      f"{self.config['flip_y']}/"
-                      )
+        await self.getWebcamConfig()
 
         if not filelist:
             msg = "no frames to render, skip"
