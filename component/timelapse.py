@@ -384,13 +384,7 @@ class Timelapse:
                                  + "in hyperlapse mode"
                                  )
             else:
-                if not self.takingframe:
-                    self.takingframe = True
-                    self.spawn_newframe_callbacks()
-                else:
-                    logging.info("last take frame hasn't completed"
-                                 + " ignoring take frame command"
-                                 )
+                self.spawn_newframe_callbacks()
         else:
             logging.info("NEW_FRAME macro ignored timelapse is disabled")
 
