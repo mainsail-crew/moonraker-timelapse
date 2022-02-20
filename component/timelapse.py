@@ -410,16 +410,25 @@ class Timelapse:
             logging.exception(msg)
 
     async def start_hyperlapse(self) -> None:
-        gcommand = "HYPERLAPSE ACTION=START" \
-                   + f" CYCLE={self.config['hyperlapse_cycle']}"
+        hyperlapse_cycle = self.config['hyperlapse_cycle']
+        park_time = self.config['park_time']
+        timediff = hyperlapse_cycle - park_time
+        if timediff >= 1:
+            gcommand = "HYPERLAPSE ACTION=START" \
+                       + f" CYCLE={hyperlapse_cycle}"
 
-        logging.debug(f"run gcommand: {gcommand}")
-        try:
-            await self.klippy_apis.run_gcode(gcommand)
-        except self.server.error:
-            msg = f"Error executing GCode {gcommand}"
-            logging.exception(msg)
-        self.hyperlapserunning = True
+            logging.debug(f"run gcommand: {gcommand}")
+            try:
+                await self.klippy_apis.run_gcode(gcommand)
+            except self.server.error:
+                msg = f"Error executing GCode {gcommand}"
+                logging.exception(msg)
+            self.hyperlapserunning = True
+        else:
+            logging.info("WARNING: Blocked start of Hyperlapse, because "
+                         f"hyperlapse_cycle ({hyperlapse_cycle}s) is smaller "
+                         f"then or to close to park_time ({park_time}s)"
+                         )
 
     async def stop_hyperlapse(self) -> None:
         gcommand = "HYPERLAPSE ACTION=STOP"
