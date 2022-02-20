@@ -102,7 +102,7 @@ class Timelapse:
             'rotation': 0,
             'flip_x': False,
             'flip_y': False,
-            'duplicatelastframe': 0,
+            'duplicatelastframe': 5,
             'previewimage': True,
             'saveframes': False
         }
