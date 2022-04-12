@@ -36,7 +36,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 function stop_klipper {
-    if [ "$(sudo systemctl list-units --full -all -t service --no-legend | grep -F "klipper.service")" ]; then
+    if [ "$(sudo systemctl list-units --full --all -t service --no-legend | grep -F "klipper.service")" ]; then
         echo "Klipper service found! Stopping during Install."
         sudo systemctl stop klipper
     else
@@ -46,7 +46,7 @@ function stop_klipper {
 }
 
 function stop_moonraker {
-    if [ "$(sudo systemctl list-units --full -all -t service --no-legend | grep -F "moonraker.service")" ]; then
+    if [ "$(sudo systemctl list-units --full --all -t service --no-legend | grep -F "moonraker.service")" ]; then
         echo "Moonraker service found! Stopping during Install."
         sudo systemctl stop moonraker
     else
