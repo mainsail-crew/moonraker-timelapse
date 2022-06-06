@@ -661,7 +661,7 @@ class Timelapse:
                 + " '" + self.temp_dir + outfile + ".mp4' -y"
 
             # log and notify ws
-            logging.debug(f"start FFMPEG: {cmd}")
+            logging.info(f"start FFMPEG: {cmd}")
             result.update({
                 'status': 'started',
                 'framecount': str(self.framecount),
@@ -725,7 +725,7 @@ class Timelapse:
                             + " " + self.config['extraoutputparams'] \
                             + " '" + previewFilePath + "' -y"
 
-                        logging.debug(f"preview image cmd: {cmd}")
+                        logging.info(f"Rotate preview image cmd: {cmd}")
 
                         scmd = shell_cmd.build_shell_command(cmd)
                         try:
