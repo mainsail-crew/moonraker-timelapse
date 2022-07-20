@@ -40,7 +40,7 @@ function stop_klipper {
         echo "Klipper service found! Stopping during Install."
         sudo systemctl stop klipper
     else
-        echo "Klipper service not found, please install Klipper first"
+        echo -e "${RED}Error:${NC} Klipper service not found, please install Klipper first\nNOTE: If you use multiple instances of klipper you need to create the symlinks manually for now! see Github issue #13 for further information"
         exit 1
     fi
 }
@@ -86,7 +86,7 @@ function restart_services {
 function check_ffmpeg {
 
     if [ ! -f "$FFMPEG_BIN" ]; then
-        echo -e "${YELLOW}WARNING:${NC} FFMPEG not found in '${FFMPEG_BIN}'. Render will not be possible!\nPlease install FFMPEG running:\n\n  sudo apt install ffmpeg\n\nor specify 'ffmpeg_binary_path' in moonraker.conf in the [timelapse] section if ffmpeg is installed in a different directory, to use render functionality"
+        echo -e "${YELLOW}WARNING: FFMPEG not found in '${FFMPEG_BIN}'. Render will not be possible!${NC}\nPlease install FFMPEG running:\n\n  sudo apt install ffmpeg\n\nor specify 'ffmpeg_binary_path' in moonraker.conf in the [timelapse] section if ffmpeg is installed in a different directory, to use render functionality"
 	fi
 
 }
