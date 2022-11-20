@@ -238,8 +238,8 @@ class Timelapse:
                                                              flip_y
                                                              )
         self.config['rotation'] = self.confighelper.getint('rotation',
-                                                             rotation
-                                                             )
+                                                           rotation
+                                                           )
         logging.debug("snapshoturlConfig:"
                       f"{self.config['snapshoturl']}")
 
