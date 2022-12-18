@@ -226,6 +226,7 @@ class Timelapse:
         snapshoturl = webcamconfig['urlSnapshot']
         flip_x = webcamconfig['flipX']
         flip_y = webcamconfig['flipY']
+        rotation = webcamconfig['rotate']
 
         self.config['snapshoturl'] = self.confighelper.get('snapshoturl',
                                                            snapshoturl
@@ -236,12 +237,16 @@ class Timelapse:
         self.config['flip_y'] = self.confighelper.getboolean('flip_y',
                                                              flip_y
                                                              )
+        self.config['rotation'] = self.confighelper.getint('rotation',
+                                                           rotation
+                                                           )
         logging.debug("snapshoturlConfig:"
                       f"{self.config['snapshoturl']}")
 
-        logging.debug("flip x/y: "
+        logging.debug("flip x/y, rotation: "
                       f"{self.config['flip_x']}/"
-                      f"{self.config['flip_y']}"
+                      f"{self.config['flip_y']}, "
+                      f"{self.config['rotation']}"
                       )
 
         if not self.config['snapshoturl'].startswith('http'):
@@ -636,10 +641,20 @@ class Timelapse:
 
             # apply rotation
             filterParam = ""
-            if self.config['rotation'] > 0:
+            if self.config['rotation'] == 90 and self.config['flip_y']:
+                filterParam = " -vf 'transpose=3'"
+            elif self.config['rotation'] == 90:
+                filterParam = " -vf 'transpose=1'"
+            elif self.config['rotation'] == 180:
+                filterParam = " -vf 'hflip,vflip'"
+            elif self.config['rotation'] == 270:
+                filterParam = " -vf 'transpose=2'"
+            elif self.config['rotation'] == 270 and self.config['flip_y']:
+                filterParam = " -vf 'transpose=0'"
+            elif self.config['rotation'] > 0:
                 pi = 3.141592653589793
                 rot = str(self.config['rotation']*(pi/180))
-                filterParam = " -vf rotate=" + rot
+                filterParam = " -vf 'rotate=" + rot + "'"
             elif self.config['flip_x'] and self.config['flip_y']:
                 filterParam = " -vf 'hflip,vflip'"
             elif self.config['flip_x']:
