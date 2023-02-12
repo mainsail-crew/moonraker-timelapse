@@ -26,7 +26,25 @@ SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/ && pwd )"
 # Default Parameters
 MOONRAKER_TARGET_DIR="${HOME}/moonraker/moonraker/components"
 SYSTEMDDIR="/etc/systemd/system"
-KLIPPER_CONFIG_DIR="${HOME}/klipper_config"
+#KLIPPER_CONFIG_DIR="${HOME}/klipper_config"
+
+# Fix
+# Check if KLIPPER_CONFIG_DIR="${HOME}/klipper_config" exists
+if [ -d "${HOME}/klipper_config" ]; 
+then
+    KLIPPER_CONFIG_DIR="${HOME}/klipper_config"
+# Check if KLIPPER_CONFIG_DIR="${HOME}/printer_data/config" exists
+elif [ -d "${HOME}/printer_data/config" ]; 
+then
+    KLIPPER_CONFIG_DIR="${HOME}/printer_data/config"
+# Set KLIPPER_CONFIG_DIR="${HOME}/printer_data/config" as the default directory if neither exists
+else
+    KLIPPER_CONFIG_DIR="${HOME}/printer_data/config"
+fi
+
+echo "Installation will be done in $KLIPPER_CONFIG_DIR"
+
+
 FFMPEG_BIN="/usr/bin/ffmpeg"
 
 # Define text colors
