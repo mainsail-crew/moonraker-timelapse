@@ -453,7 +453,7 @@ class Timelapse:
         await self.getWebcamConfig()
 
         options = ""
-        if self.wget_skip_cert:
+        if self.wget_skip_cert == True:
             options += "--no-check-certificate "
 
         self.framecount += 1
