@@ -67,6 +67,8 @@ class Timelapse:
             "frame_path", "/tmp/timelapse/")
         self.ffmpeg_binary_path = confighelper.get(
             "ffmpeg_binary_path", "/usr/bin/ffmpeg")
+        self.wget_skip_cert = confighelper.get(
+            "wget_skip_cert_check", "False")
 
         # Setup default config
         self.config: Dict[str, Any] = {
@@ -450,10 +452,14 @@ class Timelapse:
         # make sure webcamconfig is uptodate before grabbing a new frame
         await self.getWebcamConfig()
 
+        options = ""
+        if self.wget_skip_cert:
+            options += "--no-check-certificate "
+
         self.framecount += 1
         framefile = "frame" + str(self.framecount).zfill(6) + ".jpg"
-        cmd = "wget " + self.config['snapshoturl'] + " -O " \
-              + self.temp_dir + framefile
+        cmd = "wget " + options + self.config['snapshoturl'] \
+              + " -O " + self.temp_dir + framefile
         self.lastframefile = framefile
         logging.debug(f"cmd: {cmd}")
 

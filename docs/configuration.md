@@ -239,6 +239,7 @@ does.
 #duplicatelastframe: 0
 #previewimage: True
 #saveframes: False
+#wget_skip_cert_check: False
 
 ```
 
