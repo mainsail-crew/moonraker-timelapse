@@ -67,8 +67,8 @@ class Timelapse:
             "frame_path", "/tmp/timelapse/")
         self.ffmpeg_binary_path = confighelper.get(
             "ffmpeg_binary_path", "/usr/bin/ffmpeg")
-        self.wget_skip_cert = confighelper.get(
-            "wget_skip_cert_check", "False")
+        self.wget_skip_cert = confighelper.getboolean(
+            "wget_skip_cert_check", False)
 
         # Setup default config
         self.config: Dict[str, Any] = {
@@ -453,7 +453,7 @@ class Timelapse:
         await self.getWebcamConfig()
 
         options = ""
-        if self.wget_skip_cert == True:
+        if self.wget_skip_cert:
             options += "--no-check-certificate "
 
         self.framecount += 1
