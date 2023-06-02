@@ -275,5 +275,5 @@ Note: adding and uncommenting this in your moonraker.conf will disable the possi
 You may want to change your timelapse to a higher resolution. To do this, you will need to change the webcam stream to a higher resolution since the component will grab the frame of the from the stream.
 To do so, please refer to the documentation of your Image:
 
--   MainsailOS: https://docs.mainsail.xyz/quicktips/multicam
+-   MainsailOS: https://crowsnest.mainsail.xyz/
 -   FluiddPI: https://docs.fluidd.xyz/features/cameras
