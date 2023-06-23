@@ -614,7 +614,7 @@ class Timelapse:
             # prepare output filename
             now = datetime.now()
             date_time = now.strftime(self.config['time_format_code'])
-            inputfiles = self.temp_dir + "frame%6d.jpg"
+            inputfiles = self.temp_dir + "frame*.jpg"
             outfile = f"timelapse_{gcodefilename}_{date_time}"
 
             # dublicate last frame
