@@ -167,7 +167,7 @@ Defines the target length of a video (Unit seconds)
 #### variable_fps_min
 Minimum fps for variable_fps (Unit frames per second).
 
-#### variable_fps_min
+#### variable_fps_max
 Maximum fps for variable_fps (Unit frames per second).
 
 #### constant_rate_factor
