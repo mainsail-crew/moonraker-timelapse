@@ -22,6 +22,7 @@ from typing import (
 )
 if TYPE_CHECKING:
     from confighelper import ConfigHelper
+    from .webcam import WebcamManager, WebCam
     from websockets import WebRequest
     from . import shell_command
     from . import klippy_apis
@@ -53,12 +54,6 @@ class Timelapse:
         self.server = confighelper.get_server()
         self.klippy_apis: APIComp = self.server.lookup_component('klippy_apis')
         self.database: DBComp = self.server.lookup_component("database")
-        try:
-            self.webcams_db = self.database.wrap_namespace("webcams")
-        except Exception as e:
-            self.noWebcamDb = True
-            logging.info(f"No 'Webcams' namespace in database! "
-                         f"Exception: {e}")
 
         # setup static (nonDB) settings
         out_dir_cfg = confighelper.get(
@@ -123,21 +118,6 @@ class Timelapse:
         # support the settings endpoint
         self.overwriteDbconfigWithConfighelper()
 
-        # Read Webcam config from Database
-        try:
-            camUUID = self.config['camera']
-            if not self.config['camera'] == "" and not self.noWebcamDb:
-                webcamconfig = self.webcams_db[camUUID]
-                if isinstance(webcamconfig, asyncio.Future):
-                    self.parseWebcamConfig(webcamconfig.result())
-                else:
-                    self.parseWebcamConfig(webcamconfig)
-
-        except Exception as e:
-            logging.info(f"something went wrong getting Cam"
-                         f" UUID:'{camUUID}' from Database. "
-                         f"Exception: {e}")
-
         # check if ffmpeg is installed
         self.ffmpeg_installed = os.path.isfile(self.ffmpeg_binary_path)
         if not self.ffmpeg_installed:
@@ -187,6 +167,9 @@ class Timelapse:
             "/machine/timelapse/lastframeinfo", ['GET'],
             self.webrequest_lastframeinfo)
 
+    async def component_init(self) -> None:
+        await self.getWebcamConfig()
+
     def overwriteDbconfigWithConfighelper(self) -> None:
         blockedsettings = []
 
@@ -210,25 +193,47 @@ class Timelapse:
         logging.debug(f"blockedsettings {self.config['blockedsettings']}")
 
     async def getWebcamConfig(self) -> None:
+        # Read Webcam config from Database
+        webcam_name = self.config['camera']
         try:
-            camUUID = self.config['camera']
-            if not self.config['camera'] == "" and not self.noWebcamDb:
-                webcamconfig = self.webcams_db[camUUID]
-                if isinstance(webcamconfig, asyncio.Future):
-                    self.parseWebcamConfig(await webcamconfig)
-                else:
-                    self.parseWebcamConfig(webcamconfig)
+            wcmgr: WebcamManager = self.server.lookup_component("webcam")
+            cams = wcmgr.get_webcams()
+
+            if not cams:
+                logging.info("WARNING: no camera configured, " +
+                             "using the fallback config")
+                fallback = {'snapshot_url': self.config['snapshoturl'],
+                            'rotation': self.config['rotation'],
+                            'flip_horizontal': self.config['flip_x'],
+                            'flip_vertical': self.config['flip_y']
+                            }
+                self.parseWebcamConfig(fallback)
+                return
+
+            if webcam_name and webcam_name in cams:
+                camera = cams[webcam_name]
+            else:
+                camera = list(cams.values())[0]
+
+            self.parseWebcamConfig(camera.as_dict())
 
         except Exception as e:
             logging.info(f"something went wrong getting"
-                         f"Cam UUID:{camUUID} from Database. "
-                         f"Exception: {e}")
+                         f"Cam Camera:{webcam_name} from Database. "
+                         f"Exception: {e}"
+                         )
 
     def parseWebcamConfig(self, webcamconfig) -> None:
-        snapshoturl = webcamconfig['urlSnapshot']
-        flip_x = webcamconfig['flipX']
-        flip_y = webcamconfig['flipY']
-        rotation = webcamconfig['rotate']
+        snapshoturl = webcamconfig['snapshot_url']
+        flip_x = webcamconfig['flip_horizontal']
+        flip_y = webcamconfig['flip_vertical']
+        rotation = webcamconfig['rotation']
+
+        oldWebcamConfig = {"url": self.config['snapshoturl'],
+                           "flip_x": self.config['flip_x'],
+                           "flip_y": self.config['flip_y'],
+                           "rotation": self.config['rotation']
+                           }
 
         self.config['snapshoturl'] = self.confighelper.get('snapshoturl',
                                                            snapshoturl
@@ -242,14 +247,6 @@ class Timelapse:
         self.config['rotation'] = self.confighelper.getint('rotation',
                                                            rotation
                                                            )
-        logging.debug("snapshoturlConfig:"
-                      f"{self.config['snapshoturl']}")
-
-        logging.debug("flip x/y, rotation: "
-                      f"{self.config['flip_x']}/"
-                      f"{self.config['flip_y']}, "
-                      f"{self.config['rotation']}"
-                      )
 
         if not self.config['snapshoturl'].startswith('http'):
             if not self.config['snapshoturl'].startswith('/'):
@@ -258,6 +255,21 @@ class Timelapse:
             else:
                 self.config['snapshoturl'] = "http://localhost" + \
                                              self.config['snapshoturl']
+
+        # check if settings have changed and if so creat log entry
+        newWebcamConfig = {"url": self.config['snapshoturl'],
+                           "flip_x": self.config['flip_x'],
+                           "flip_y": self.config['flip_y'],
+                           "rotation": self.config['rotation']
+                           }
+
+        if not oldWebcamConfig == newWebcamConfig:
+            logging.info("snapshoturl: "
+                         f"{self.config['snapshoturl']}, "
+                         f"Flip V/H: {self.config['flip_y']}/"
+                         f"{self.config['flip_y']}, "
+                         f"rotation: {self.config['rotation']}"
+                         )
 
     async def webrequest_lastframeinfo(self,
                                        webrequest: WebRequest
