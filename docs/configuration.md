@@ -248,5 +248,5 @@ You may want to change your Timelapse to a higher resolution, you
 need to change the Webcamstream to a higher resolution since the
 Component will grab the frame of the Streamer.
 To do so, please refer to the documentation of your Image:  
-- MainsailOS: https://docs.mainsail.xyz/quicktips/multicam
+- MainsailOS: https://crowsnest.mainsail.xyz/configuration/cam-section#resolution
 - FluiddPI: https://docs.fluidd.xyz/features/cameras 
