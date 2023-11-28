@@ -250,3 +250,21 @@ Component will grab the frame of the Streamer.
 To do so, please refer to the documentation of your Image:  
 - MainsailOS: https://crowsnest.mainsail.xyz/configuration/cam-section#resolution
 - FluiddPI: https://docs.fluidd.xyz/features/cameras 
+
+## Reduce the check interval inside the klipper macros
+The default is that the macros check every 0.5 sec if the print can continue.
+This is a good compromise between cpu load and quality. From now one you can change
+this time.
+Caution, smaller numbers increase the risk of a klipper "timer to close"
+
+To change it simple, add the following GCODE to your print start:
+```ini
+SET_GCODE_VARIABLE MACRO=TIMELAPSE_TAKE_FRAME VARIABLE=check_time VALUE=0.5 
+``` 
+
+To get that change at every klipper start:
+```ini
+[delayed_gcode _INIT_TIMELAPSE_CHECK_TIME]
+initial_duration: 1
+gcode: SET_GCODE_VARIABLE MACRO=TIMELAPSE_TAKE_FRAME VARIABLE=check_time VALUE=0.5 
+``` 
