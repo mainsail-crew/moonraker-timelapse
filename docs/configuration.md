@@ -240,6 +240,7 @@ does.
 #previewimage: True
 #saveframes: False
 #wget_skip_cert_check: False
+#wget_timeout_seconds: 2
 
 ```
 

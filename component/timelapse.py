@@ -64,6 +64,8 @@ class Timelapse:
             "ffmpeg_binary_path", "/usr/bin/ffmpeg")
         self.wget_skip_cert = confighelper.getboolean(
             "wget_skip_cert_check", False)
+        self.wget_timeout_seconds = confighelper.getfloat(
+            "wget_timeout_seconds", 2.0)
 
         # Setup default config
         self.config: Dict[str, Any] = {
@@ -478,7 +480,7 @@ class Timelapse:
         shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
         scmd = shell_cmd.build_shell_command(cmd, None)
         try:
-            cmdstatus = await scmd.run(timeout=2., verbose=False)
+            cmdstatus = await scmd.run(timeout=self.wget_timeout_seconds, verbose=False)
         except Exception:
             logging.exception(f"Error running cmd '{cmd}'")
 
