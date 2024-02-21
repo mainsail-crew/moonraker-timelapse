@@ -104,6 +104,11 @@ class Timelapse:
             'saveframes': False
         }
 
+        # Multi-cam support
+        self.defaultcamname = ""
+        self.config['multi_cam_enabled'] = False;
+        self.config['multi_cam_ignore'] = ""
+
         # Get Config from Database and overwrite defaults
         dbconfig: Dict[str, Any] = self.database.get_item("timelapse",
                                                           "config",
@@ -215,7 +220,11 @@ class Timelapse:
             else:
                 camera = list(cams.values())[0]
 
-            self.parseWebcamConfig(camera.as_dict())
+            # Multi-cam support
+            webcamconfig = camera.as_dict();
+            self.defaultcamname = webcamconfig['name']
+
+            self.parseWebcamConfig(webcamconfig)
 
         except Exception as e:
             logging.info(f"something went wrong getting"
@@ -482,6 +491,13 @@ class Timelapse:
         except Exception:
             logging.exception(f"Error running cmd '{cmd}'")
 
+        # Multi-cam support
+        if self.config['multi_cam_enabled']:
+            try:
+                await self.newframe_multicam(shell_cmd, options);
+            except Exception:
+                logging.exception(f"Error running newframe_multicam() method")
+
         result = {'action': 'newframe'}
         if cmdstatus:
             result.update({
@@ -497,6 +513,47 @@ class Timelapse:
         self.notify_event(result)
         self.takingframe = False
 
+    async def newframe_multicam(self, shell_cmd, options) -> None:
+        wcmgr: WebcamManager = self.server.lookup_component("webcam")
+        cams = wcmgr.get_webcams().values()
+        camsignored = self.confighelper.get("multi_cam_ignore", "").split(",")
+
+        for cam in cams:
+            camcfg = cam.as_dict()
+            camname = camcfg['name']
+            snapshoturl = camcfg['snapshot_url']
+
+            if not snapshoturl:
+                continue
+
+            # skip ignored cameras
+            if camname in camsignored:
+                continue
+            
+            # skip default camera selected by timelapse
+            if camname == self.defaultcamname:
+                continue
+
+            if not snapshoturl.startswith('http'):
+                if not snapshoturl.startswith('/'):
+                    snapshoturl = "http://localhost/" + snapshoturl
+                else:
+                    snapshoturl = "http://localhost" + snapshoturl
+                
+            framefile =  camname + "-frame" + str(self.framecount).zfill(6) + ".jpg"
+            
+            cmd = "wget " + options + snapshoturl \
+                  + " -O " + self.temp_dir + framefile
+            
+            logging.debug(f"cmd: {cmd}")
+    
+            scmd = shell_cmd.build_shell_command(cmd, None)
+            try:
+                cmdstatus = await scmd.run(timeout=2., verbose=False)
+            except Exception:
+                logging.exception(f"Error running cmd '{cmd}'")
+    ###
+    
     async def handle_status_update(self, status: Dict[str, Any]) -> None:
         if 'print_stats' in status:
             printstats = status['print_stats']
@@ -537,7 +594,7 @@ class Timelapse:
 
     def cleanup(self) -> None:
         logging.debug("cleanup frame directory")
-        filelist = glob.glob(self.temp_dir + "frame*.jpg")
+        filelist = glob.glob(self.temp_dir + "*frame*.jpg")
         if filelist:
             for filepath in filelist:
                 os.remove(filepath)
@@ -549,7 +606,7 @@ class Timelapse:
         ioloop.spawn_callback(self.saveFramesZip)
 
     async def saveFramesZip(self, webrequest=None):
-        filelist = sorted(glob.glob(self.temp_dir + "frame*.jpg"))
+        filelist = sorted(glob.glob(self.temp_dir + "*frame*.jpg"))
         self.framecount = len(filelist)
         result = {'action': 'saveframes'}
 
@@ -595,6 +652,117 @@ class Timelapse:
         ioloop = IOLoop.current()
         ioloop.spawn_callback(self.render)
 
+    async def render_multicam(self, fps, gcodefilename):
+        wcmgr: WebcamManager = self.server.lookup_component("webcam")
+        cams = wcmgr.get_webcams().values()
+        camsignored = self.confighelper.get("multi_cam_ignore", "").split(",")
+
+        for cam in cams:
+            camcfg = cam.as_dict()
+            snapshoturl = camcfg['snapshot_url']
+            
+            if not snapshoturl:
+                continue
+
+            camname = camcfg['name']
+
+            # skip ignored cameras
+            if camname in camsignored:
+                continue
+            
+            # skip default camera selected by timelapse
+            if camname == self.defaultcamname:
+                continue
+            
+            filelist = sorted(glob.glob(self.temp_dir +  str(camname) + "-frame*.jpg"))
+            framecount = len(filelist)
+    
+            if not framecount:
+                continue
+    
+            # prepare output filename
+            now = datetime.now()
+            date_time = now.strftime(self.config['time_format_code'])
+            inputfiles = self.temp_dir + str(camname) + "-frame%6d.jpg"
+            outfile = f"timelapse_{gcodefilename}_{date_time}-" + str(camname)
+    
+            # duplicate last frame
+            duplicates = []
+            if self.config['duplicatelastframe'] > 0:
+                lastframe = filelist[-1:][0]
+    
+                for i in range(self.config['duplicatelastframe']):
+                    nextframe = str(framecount + i + 1).zfill(6)
+                    duplicate = str(camname) + "-frame" + nextframe + ".jpg"
+                    duplicatePath = self.temp_dir + duplicate
+                    duplicates.append(duplicatePath)
+                    try:
+                        shutil.copy(lastframe, duplicatePath)
+                    except OSError as err:
+                        logging.info(f"duplicating last frame failed: {err}")
+    
+            # update Filelist
+            filelist = sorted(glob.glob(self.temp_dir + str(camname) + "-frame*.jpg"))
+            framecount = len(filelist)
+    
+            # TODO
+            # apply rotation
+            filterParam = ""
+    
+            # build shell command
+            cmd = self.ffmpeg_binary_path \
+                + " -r " + str(fps) \
+                + " -i '" + inputfiles + "'" \
+                + filterParam \
+                + " -threads 2 -g 5" \
+                + " -crf " + str(self.config['constant_rate_factor']) \
+                + " -vcodec libx264" \
+                + " -pix_fmt " + self.config['pixelformat'] \
+                + " -an" \
+                + " " + self.config['extraoutputparams'] \
+                + " '" + self.temp_dir + outfile + ".mp4' -y"
+    
+             # run the command
+            shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
+            scmd = shell_cmd.build_shell_command(cmd, self.ffmpeg_cb)
+            try:
+                cmdstatus = await scmd.run(verbose=True,
+                                           log_complete=False,
+                                           timeout=9999999999,
+                                           )
+            except Exception:
+                logging.exception(f"Error running cmd '{cmd}'")
+    
+            # move finished output file to output directory
+            try:
+                shutil.move(self.temp_dir + outfile + ".mp4",
+                            self.out_dir + outfile + ".mp4")
+            except OSError as err:
+                logging.info(f"moving output file failed: {err}")
+    
+            # copy image preview
+            if self.config['previewimage']:
+                previewFile = f"{outfile}.jpg"
+                previewFilePath = self.out_dir + previewFile
+                previewSrc = filelist[-1:][0]
+                try:
+                    shutil.copy(previewSrc, previewFilePath)
+                except OSError as err:
+                    logging.info(f"copying preview image failed: {err}")
+    
+                # TODO
+                # apply rotation previewimage if needed
+    
+            # cleanup duplicates
+            if duplicates:
+                for dupe in duplicates:
+                    try:
+                        os.remove(dupe)
+                    except OSError as err:
+                        logging.info(f"remove duplicate failed: {err}")
+        
+    ###
+    
     async def render(self, webrequest=None):
         filelist = sorted(glob.glob(self.temp_dir + "frame*.jpg"))
         self.framecount = len(filelist)
@@ -787,6 +955,10 @@ class Timelapse:
                     except OSError as err:
                         logging.info(f"remove duplicate failed: {err}")
 
+        # Multi-cam support
+        if self.config['multi_cam_enabled']:
+            await self.render_multicam(fps, gcodefilename);
+        
         # log and notify ws
         logging.info(msg)
         result.update({

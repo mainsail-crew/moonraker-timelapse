@@ -267,4 +267,27 @@ To get that change at every klipper start:
 [delayed_gcode _INIT_TIMELAPSE_CHECK_TIME]
 initial_duration: 1
 gcode: SET_GCODE_VARIABLE MACRO=TIMELAPSE_TAKE_FRAME VARIABLE=check_time VALUE=0.5 
-``` 
+```
+
+## Multiple cameras support (alpha)
+- You have to enable it in your config first, see bellow.
+- It will record timelapses from all of your configured cameras.
+  If you want to ignore some, you have to configure it, see bellow.
+- Recorded timelapses will appear in your Timelapse Files.
+- Camera image settings like rotation and flip are currently not supported.
+
+To enable multiple cameras timelapse it should be configured like this:
+```ini
+# moonraker.conf
+
+[timelapse]
+multi_cam_enabled: True
+```
+
+If you want to ignore any of your cameras add following setting and replace camera names by yours:
+```ini
+# moonraker.conf
+
+[timelapse]
+multi_cam_ignore: MyCam01,MyCam02
+```
