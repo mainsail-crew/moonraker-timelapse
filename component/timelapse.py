@@ -248,7 +248,7 @@ class Timelapse:
                                                            rotation
                                                            )
 
-        if not self.config['snapshoturl'].startswith('http'):
+        if not self.config['snapshoturl'].startswith('http') and not self.config['snapshoturl'].startswith('cmd:'):
             if not self.config['snapshoturl'].startswith('/'):
                 self.config['snapshoturl'] = "http://localhost/" + \
                                              self.config['snapshoturl']
@@ -470,15 +470,22 @@ class Timelapse:
 
         self.framecount += 1
         framefile = "frame" + str(self.framecount).zfill(6) + ".jpg"
-        cmd = "wget " + options + self.config['snapshoturl'] \
-              + " -O " + self.temp_dir + framefile
+        url = self.config['snapshoturl']
+        waittime = 2.
+        if self.config['snapshoturl'].startswith('cmd:'):
+            cmdStart = self.config['snapshoturl'][4:]
+            cmd = cmdStart + " " + self.temp_dir + framefile
+            waittime = 10.
+        else:
+            cmd = "wget " + options + self.config['snapshoturl'] \
+                + " -O " + self.temp_dir + framefile
         self.lastframefile = framefile
         logging.debug(f"cmd: {cmd}")
 
         shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
         scmd = shell_cmd.build_shell_command(cmd, None)
         try:
-            cmdstatus = await scmd.run(timeout=2., verbose=False)
+            cmdstatus = await scmd.run(timeout=waittime, verbose=False)
         except Exception:
             logging.exception(f"Error running cmd '{cmd}'")
 

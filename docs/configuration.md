@@ -95,8 +95,11 @@ use or render.
 This setting let you choose which camera should be used to take frames from.
 It depends on the 'webcam' namespace in the moonraker DB and uses the
 'snapshoturl', 'flipX' and 'flipY' associated whith selected camera. Alternatively you can configure
-'snapshoturl', 'flip_x' and 'flip_y' in the moonraker.conf if your frontend doesn't support the webcams 
+'snapshoturl', 'flip_x' and 'flip_y' in the moonraker.conf if your frontend doesn't support the webcams
 namespace of moonraker DB.
+
+'snapshoturl' can be a shellcommand, when the value is prefixed with 'cmd:', eg. 'cmd:/home/pi/bin/canondslrtakeframe.sh'.
+The first argument is the absolute frame-filenmae.
 
 #### gcode_verbose
 'true' enables or 'false' disables verbosity of the Macros
