@@ -497,17 +497,17 @@ class Timelapse:
 
         self.framecount += 1
         framefile = "frame" + str(self.framecount).zfill(6) + ".jpg"
-        url = self.config['snapshoturl']
-        waittime = 2.
         if self.config['use_snapshot_cmd'] == True and not self.snapshotCmdWorking:
             logging.info(f"snapshot_cmd_check failed on startup or snapshot_cmd is empty: {self.config['snapshot_cmd']}")
 
+        waittime = 2.
         if self.config['use_snapshot_cmd'] == True and self.snapshotCmdWorking:
             cmd = self.config['snapshot_cmd'] + " " + self.temp_dir + framefile
             waittime = self.config['snapshot_cmd_waittime']
         else:
             cmd = "wget " + options + self.config['snapshoturl'] \
                 + " -O " + self.temp_dir + framefile
+
         self.lastframefile = framefile
         logging.debug(f"cmd: {cmd}")
 
