@@ -51,6 +51,8 @@ Advanced Settings -> Gcode -> Layer Change Gcode -> ``TIMELAPSE_TAKE_FRAME``
 ##   Directory where the temporary frames are saved
 #ffmpeg_binary_path: /usr/bin/ffmpeg
 ##   Directory where ffmpeg is installed
+#gphoto2_binary_path: /usr/bin/gphoto2
+##   Directory where gphoto2 is installed
 
 
 ```
@@ -97,6 +99,14 @@ It depends on the 'webcam' namespace in the moonraker DB and uses the
 'snapshoturl', 'flipX' and 'flipY' associated whith selected camera. Alternatively you can configure
 'snapshoturl', 'flip_x' and 'flip_y' in the moonraker.conf if your frontend doesn't support the webcams 
 namespace of moonraker DB.
+
+#### use_gphoto2
+'true' enables snapshot_cmd processing.
+Make sure, that you have gphoto2 installed.
+
+#### gphoto2_waittime
+This defines the wait time for the snapshot to be created.
+You should increase the 'park_time' setting for better results.
 
 #### gcode_verbose
 'true' enables or 'false' disables verbosity of the Macros

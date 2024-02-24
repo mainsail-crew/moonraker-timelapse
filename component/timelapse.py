@@ -48,6 +48,7 @@ class Timelapse:
         self.byrendermacro = False
         self.hyperlapserunning = False
         self.printing = False
+        self.gphoto2Working = False
         self.noWebcamDb = False
 
         self.confighelper = confighelper
@@ -62,6 +63,8 @@ class Timelapse:
             "frame_path", "/tmp/timelapse/")
         self.ffmpeg_binary_path = confighelper.get(
             "ffmpeg_binary_path", "/usr/bin/ffmpeg")
+        self.gphoto2_binary_path = confighelper.get(
+            "gphoto2_binary_path", "/usr/bin/gphoto2")
         self.wget_skip_cert = confighelper.getboolean(
             "wget_skip_cert_check", False)
 
@@ -71,6 +74,8 @@ class Timelapse:
             'mode': "layermacro",
             'camera': "",
             'snapshoturl': "http://localhost:8080/?action=snapshot",
+            'use_gphoto2': False,
+            'gphoto2_waittime': 10.0,
             'stream_delay_compensation': 0.05,
             'gcode_verbose': False,
             'parkhead': False,
@@ -169,6 +174,8 @@ class Timelapse:
 
     async def component_init(self) -> None:
         await self.getWebcamConfig()
+        if self.config['use_gphoto2'] == True:
+            self.gphoto2Working = await self.check_gphoto2()
 
     def overwriteDbconfigWithConfighelper(self) -> None:
         blockedsettings = []
@@ -460,6 +467,28 @@ class Timelapse:
             logging.exception(msg)
         self.hyperlapserunning = False
 
+    async def check_gphoto2(self) -> bool:
+        gphoto2_installed = os.path.isfile(self.gphoto2_binary_path)
+        if not gphoto2_installed:
+            logging.info(f"timelapse: {self.gphoto2_binary_path} \
+                        not found please install to use gphoto2 functionality")
+            return False
+
+        cmd = self.gphoto2_binary_path + " --get-config /main/imgsettings/imageformat"
+        shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
+        scmd = shell_cmd.build_shell_command(cmd, None)
+        try:
+            cmdstatus = await scmd.run(timeout=2., verbose=False)
+        except Exception:
+            logging.exception(f"Error running cmd '{cmd}'")
+            return False
+
+        logging.info(f"check_gphoto2: {cmd} -> {cmdstatus}")
+        if cmdstatus:
+            return True
+        else:
+            return False
+
     async def newframe(self) -> None:
         # make sure webcamconfig is uptodate before grabbing a new frame
         await self.getWebcamConfig()
@@ -469,16 +498,27 @@ class Timelapse:
             options += "--no-check-certificate "
 
         self.framecount += 1
-        framefile = "frame" + str(self.framecount).zfill(6) + ".jpg"
-        cmd = "wget " + options + self.config['snapshoturl'] \
-              + " -O " + self.temp_dir + framefile
+        framebasefile = "frame" + str(self.framecount).zfill(6)
+        framefile = framebasefile + ".jpg"
+        if self.config['use_gphoto2'] == True and not self.gphoto2Working:
+            logging.info(f"gphoto2_check failed on startup - using fallback webcam")
+
+        waittime = 2.
+        if self.config['use_gphoto2'] == True and self.gphoto2Working:
+            cmd = self.gphoto2_binary_path + " --quiet --capture-image-and-download --filename=\"" \
+                + self.temp_dir + framebasefile + ".%C\""
+            waittime = self.config['gphoto2_waittime']
+        else:
+            cmd = "wget " + options + self.config['snapshoturl'] \
+                + " -O " + self.temp_dir + framefile
+
         self.lastframefile = framefile
         logging.debug(f"cmd: {cmd}")
 
         shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
         scmd = shell_cmd.build_shell_command(cmd, None)
         try:
-            cmdstatus = await scmd.run(timeout=2., verbose=False)
+            cmdstatus = await scmd.run(timeout=waittime, verbose=False)
         except Exception:
             logging.exception(f"Error running cmd '{cmd}'")
 
@@ -512,6 +552,10 @@ class Timelapse:
             # print_started
             self.cleanup()
             self.printing = True
+            self.gphoto2Working = False
+
+            if self.config['use_gphoto2'] == True:
+                self.gphoto2Working = await self.check_gphoto2()
 
             # start hyperlapse if mode is set
             if self.config['mode'] == "hyperlapse":
