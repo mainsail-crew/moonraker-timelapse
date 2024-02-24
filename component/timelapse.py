@@ -472,6 +472,7 @@ class Timelapse:
         if not gphoto2_installed:
             logging.info(f"timelapse: {self.gphoto2_binary_path} \
                         not found please install to use gphoto2 functionality")
+            return False
 
         cmd = self.gphoto2_binary_path + " --get-config /main/imgsettings/imageformat"
         shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
