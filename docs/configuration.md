@@ -95,8 +95,23 @@ use or render.
 This setting let you choose which camera should be used to take frames from.
 It depends on the 'webcam' namespace in the moonraker DB and uses the
 'snapshoturl', 'flipX' and 'flipY' associated whith selected camera. Alternatively you can configure
-'snapshoturl', 'flip_x' and 'flip_y' in the moonraker.conf if your frontend doesn't support the webcams 
+'snapshoturl', 'flip_x' and 'flip_y' in the moonraker.conf if your frontend doesn't support the webcams
 namespace of moonraker DB.
+
+#### use_snapshot_cmd
+'true' enables snapshot_cmd processing.
+
+#### snapshot_cmd
+This defines which creates the snapshot. The
+See scripts/gphoto2_capture.sh for an example
+
+#### snapshot_cmd_check'
+This defines an optional testscript, which is run on start of the job. It checks if the camera is available.
+If not, the normal webcam is used.
+
+#### snapshot_cmd_waittime
+This defines the wait time for the snapshot to be created.
+You should increase the 'park_time' setting for better results.
 
 #### gcode_verbose
 'true' enables or 'false' disables verbosity of the Macros

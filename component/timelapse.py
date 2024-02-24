@@ -48,6 +48,7 @@ class Timelapse:
         self.byrendermacro = False
         self.hyperlapserunning = False
         self.printing = False
+        self.snapshotCmdWorking = False
         self.noWebcamDb = False
 
         self.confighelper = confighelper
@@ -71,6 +72,10 @@ class Timelapse:
             'mode': "layermacro",
             'camera': "",
             'snapshoturl': "http://localhost:8080/?action=snapshot",
+            'use_snapshot_cmd': False,
+            'snapshot_cmd': '',
+            'snapshot_cmd_check': '',
+            'snapshot_cmd_waittime': 10.0,
             'stream_delay_compensation': 0.05,
             'gcode_verbose': False,
             'parkhead': False,
@@ -169,6 +174,8 @@ class Timelapse:
 
     async def component_init(self) -> None:
         await self.getWebcamConfig()
+        if self.config['use_snapshot_cmd'] == True:
+            self.snapshotCmdWorking = await self.check_snapshot_cmd()
 
     def overwriteDbconfigWithConfighelper(self) -> None:
         blockedsettings = []
@@ -460,6 +467,26 @@ class Timelapse:
             logging.exception(msg)
         self.hyperlapserunning = False
 
+    async def check_snapshot_cmd(self) -> bool:
+        if self.config['snapshot_cmd'] == '':
+            return False
+        if self.config['snapshot_cmd_check'] == '':
+            return True
+        cmd = self.config['snapshot_cmd_check']
+        shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
+        scmd = shell_cmd.build_shell_command(cmd, None)
+        try:
+            cmdstatus = await scmd.run(timeout=2., verbose=False)
+        except Exception:
+            logging.exception(f"Error running cmd '{cmd}'")
+            return False
+
+        logging.info(f"check_snapshot_cmd: {cmd} -> {cmdstatus}")
+        if cmdstatus:
+            return True
+        else:
+            return False
+
     async def newframe(self) -> None:
         # make sure webcamconfig is uptodate before grabbing a new frame
         await self.getWebcamConfig()
@@ -470,15 +497,24 @@ class Timelapse:
 
         self.framecount += 1
         framefile = "frame" + str(self.framecount).zfill(6) + ".jpg"
-        cmd = "wget " + options + self.config['snapshoturl'] \
-              + " -O " + self.temp_dir + framefile
+        if self.config['use_snapshot_cmd'] == True and not self.snapshotCmdWorking:
+            logging.info(f"snapshot_cmd_check failed on startup or snapshot_cmd is empty: {self.config['snapshot_cmd']}")
+
+        waittime = 2.
+        if self.config['use_snapshot_cmd'] == True and self.snapshotCmdWorking:
+            cmd = self.config['snapshot_cmd'] + " " + self.temp_dir + framefile
+            waittime = self.config['snapshot_cmd_waittime']
+        else:
+            cmd = "wget " + options + self.config['snapshoturl'] \
+                + " -O " + self.temp_dir + framefile
+
         self.lastframefile = framefile
         logging.debug(f"cmd: {cmd}")
 
         shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
         scmd = shell_cmd.build_shell_command(cmd, None)
         try:
-            cmdstatus = await scmd.run(timeout=2., verbose=False)
+            cmdstatus = await scmd.run(timeout=waittime, verbose=False)
         except Exception:
             logging.exception(f"Error running cmd '{cmd}'")
 
@@ -512,6 +548,10 @@ class Timelapse:
             # print_started
             self.cleanup()
             self.printing = True
+            self.snapshotCmdWorking = False
+
+            if self.config['use_snapshot_cmd'] == True:
+                self.snapshotCmdWorking = await self.check_snapshot_cmd()
 
             # start hyperlapse if mode is set
             if self.config['mode'] == "hyperlapse":
