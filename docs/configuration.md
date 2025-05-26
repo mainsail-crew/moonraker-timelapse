@@ -145,6 +145,11 @@ add additional idle time when parking (Unit seconds, default 0.1)
 #### stream_delay_compensation
 delay frame capture (Unit seconds, default 0.05)
 
+#### wget_timeout
+Defines the timeout for the wget command when downloading frames from the camera.
+This is useful when using high-resolution cameras or slow network connections that
+may take longer than the default 2 seconds to download a frame.
+
 ### Render specific
 
 #### time_format_code
@@ -240,6 +245,7 @@ does.
 #previewimage: True
 #saveframes: False
 #wget_skip_cert_check: False
+#wget_timeout: 5.0
 
 ```
 
