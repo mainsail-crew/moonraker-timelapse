@@ -89,6 +89,40 @@ frontend) to trigger the render process.
 'True' enables or 'False' disables packing the frames to a zip file for external
 use or render.
 
+### Dual Camera
+
+#### dual_camera
+'true' enables or 'false' disables dual camera mode. When enabled, the timelapse
+will alternate between two cameras, switching periodically based on the
+`camera_switch_interval` setting. This creates a timelapse that shows the print
+from two different viewpoints.
+
+#### camera2
+The name of the second camera to use for dual camera mode. This must match a
+camera name configured in the webcam namespace of the moonraker database (i.e.,
+a camera configured in your frontend). Both cameras must be able to provide
+snapshot URLs.
+
+#### camera_switch_interval
+The number of frames between camera switches. Default is 5.
+
+- In **layermacro** mode: 1 frame = 1 layer change, so a value of 50 means
+  the camera switches every 50 layers.
+- In **hyperlapse** mode: 1 frame = 1 snapshot cycle (e.g. every 30s),
+  so a value of 50 means the camera switches every 50 snapshots.
+
+With `camera_switch_interval: 50`, the pattern is:
+
+| Frames 1-50 | Frames 51-100 | Frames 101-150 |
+|-------------|---------------|----------------|
+| Camera 1    | Camera 2      | Camera 1       |
+
+
+Note: If the two cameras have different rotation/flip settings, the component
+will automatically apply per-frame transforms so that all frames are correctly
+oriented in the final video. For best results, ensure both cameras output
+similar resolutions.
+
 ### Takeframe specific
 
 #### camera
@@ -240,6 +274,9 @@ does.
 #previewimage: True
 #saveframes: False
 #wget_skip_cert_check: False
+#dual_camera: False
+#camera2: 
+#camera_switch_interval: 50
 
 ```
 

@@ -8,6 +8,7 @@ import logging
 import os
 import glob
 import re
+import shlex
 import shutil
 import asyncio
 from datetime import datetime
@@ -49,6 +50,7 @@ class Timelapse:
         self.hyperlapserunning = False
         self.printing = False
         self.noWebcamDb = False
+        self.per_frame_transforms_applied = False
 
         self.confighelper = confighelper
         self.server = confighelper.get_server()
@@ -101,7 +103,14 @@ class Timelapse:
             'flip_y': False,
             'duplicatelastframe': 5,
             'previewimage': True,
-            'saveframes': False
+            'saveframes': False,
+            'dual_camera': False,
+            'camera2': "",
+            'camera_switch_interval': 5,
+            'snapshoturl2': "",
+            'rotation2': 0,
+            'flip_x2': False,
+            'flip_y2': False
         }
 
         # Get Config from Database and overwrite defaults
@@ -169,6 +178,7 @@ class Timelapse:
 
     async def component_init(self) -> None:
         await self.getWebcamConfig()
+        await self.getWebcam2Config()
 
     def overwriteDbconfigWithConfighelper(self) -> None:
         blockedsettings = []
@@ -271,6 +281,125 @@ class Timelapse:
                          f"rotation: {self.config['rotation']}"
                          )
 
+    async def getWebcam2Config(self) -> None:
+        """Fetch configuration for the second camera (dual_camera mode)."""
+        if not self.config['dual_camera'] or not self.config['camera2']:
+            self.config['snapshoturl2'] = None
+            self.config['flip_x2'] = False
+            self.config['flip_y2'] = False
+            self.config['rotation2'] = 0
+            return
+
+        webcam_name = self.config['camera2']
+        try:
+            wcmgr: WebcamManager = self.server.lookup_component("webcam")
+            cams = wcmgr.get_webcams()
+
+            if webcam_name in cams:
+                camera = cams[webcam_name]
+                cam_dict = camera.as_dict()
+                snapshoturl = cam_dict['snapshot_url']
+                if not snapshoturl.startswith('http'):
+                    if not snapshoturl.startswith('/'):
+                        snapshoturl = "http://localhost/" + snapshoturl
+                    else:
+                        snapshoturl = "http://localhost" + snapshoturl
+                self.config['snapshoturl2'] = snapshoturl
+                self.config['flip_x2'] = cam_dict['flip_horizontal']
+                self.config['flip_y2'] = cam_dict['flip_vertical']
+                self.config['rotation2'] = cam_dict['rotation']
+            else:
+                logging.warning(
+                    f"timelapse: camera2 '{webcam_name}' not found in "
+                    f"webcam config. Available: {list(cams.keys())}"
+                )
+        except Exception as e:
+            logging.info(
+                f"timelapse: error getting camera2 config: {e}"
+            )
+
+    def get_active_camera(self) -> int:
+        """Return 1 or 2 based on frame count and switch interval."""
+        if not self.config['dual_camera'] or not self.config['snapshoturl2']:
+            return 1
+        interval = max(1, self.config['camera_switch_interval'])
+        group = (self.framecount - 1) // interval
+        return 1 if group % 2 == 0 else 2
+
+    def _cameras_have_different_transforms(self) -> bool:
+        """Check if camera 1 and camera 2 need different transforms."""
+        return (self.config['flip_x'] != self.config['flip_x2']
+                or self.config['flip_y'] != self.config['flip_y2']
+                or self.config['rotation'] != self.config['rotation2'])
+
+    def _build_filter_for_camera(self, camera_num: int) -> str:
+        """Build ffmpeg filter string for the specified camera."""
+        if camera_num == 2:
+            flip_x = self.config['flip_x2']
+            flip_y = self.config['flip_y2']
+            rotation = self.config['rotation2']
+        else:
+            flip_x = self.config['flip_x']
+            flip_y = self.config['flip_y']
+            rotation = self.config['rotation']
+
+        if rotation == 90 and flip_y:
+            return "transpose=3"
+        elif rotation == 90:
+            return "transpose=1"
+        elif rotation == 180:
+            return "hflip,vflip"
+        elif rotation == 270 and flip_y:
+            return "transpose=0"
+        elif rotation == 270:
+            return "transpose=2"
+        elif rotation > 0:
+            pi = 3.141592653589793
+            rot = str(rotation * (pi / 180))
+            return "rotate=" + rot
+        elif flip_x and flip_y:
+            return "hflip,vflip"
+        elif flip_x:
+            return "hflip"
+        elif flip_y:
+            return "vflip"
+        return ""
+
+    async def apply_frame_transform(
+        self, framefile: str, camera_num: int
+    ) -> None:
+        """Apply camera-specific rotation/flip to a captured frame.
+        Only applies transforms when cameras have different settings."""
+        if not self._cameras_have_different_transforms():
+            return
+
+        filter_str = self._build_filter_for_camera(camera_num)
+        if not filter_str:
+            return
+
+        filepath = self.temp_dir + framefile
+        tmpfile = filepath + ".tmp.jpg"
+        cmd = (f"{self.ffmpeg_binary_path} -i '{filepath}'"
+               f" -vf '{filter_str}' '{tmpfile}' -y")
+
+        shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
+        scmd = shell_cmd.build_shell_command(cmd, None)
+        try:
+            cmdstatus = await scmd.run(timeout=5., verbose=False)
+            if cmdstatus:
+                shutil.move(tmpfile, filepath)
+                self.per_frame_transforms_applied = True
+            else:
+                logging.info(
+                    f"per-frame transform failed for {framefile}"
+                )
+                if os.path.exists(tmpfile):
+                    os.remove(tmpfile)
+        except Exception:
+            logging.exception(f"Error applying frame transform: {cmd}")
+            if os.path.exists(tmpfile):
+                os.remove(tmpfile)
+
     async def webrequest_lastframeinfo(self,
                                        webrequest: WebRequest
                                        ) -> Dict[str, Any]:
@@ -295,7 +424,9 @@ class Timelapse:
                 'park_custom_pos_y', 'park_custom_pos_dz',
                 'park_travel_speed', 'park_retract_speed',
                 'park_extrude_speed', 'park_retract_distance',
-                'park_extrude_distance', 'park_time', 'fw_retract'
+                'park_extrude_distance', 'park_time', 'fw_retract',
+                'dual_camera', 'camera2',
+                'camera_switch_interval'
             ]
             modechanged = False
 
@@ -328,6 +459,15 @@ class Timelapse:
                         else:
                             logging.info("Webcam Namespace not intialized, "
                                          "please restart moonraker service!")
+
+                    if setting in ("camera2", "dual_camera"):
+                        if not self.noWebcamDb:
+                            await self.getWebcam2Config()
+                        else:
+                            logging.info(
+                                "Webcam Namespace not initialized, "
+                                "please restart moonraker service!"
+                            )
 
                     if setting in settingsWithGcodechange:
                         gcodechange = True
@@ -379,6 +519,9 @@ class Timelapse:
             + f" EXTRUDE_DISTANCE={self.config['park_extrude_distance']}" \
             + f" PARK_TIME={self.config['park_time']}" \
             + f" FW_RETRACT={self.config['fw_retract']}" \
+            + f" DUAL_CAMERA={self.config['dual_camera']}" \
+            + f" DUAL_CAMERA_NAME='{str(self.config['camera2']).replace(chr(39), chr(39) + chr(92) + chr(39) + chr(39))}'" \
+            + f" CAMERA_SWITCH_INTERVAL={self.config['camera_switch_interval']}"
 
         logging.debug(f"run gcommand: {gcommand}")
         try:
@@ -463,6 +606,8 @@ class Timelapse:
     async def newframe(self) -> None:
         # make sure webcamconfig is uptodate before grabbing a new frame
         await self.getWebcamConfig()
+        if self.config['dual_camera']:
+            await self.getWebcam2Config()
 
         options = ""
         if self.wget_skip_cert:
@@ -470,24 +615,39 @@ class Timelapse:
 
         self.framecount += 1
         framefile = "frame" + str(self.framecount).zfill(6) + ".jpg"
-        cmd = "wget " + options + self.config['snapshoturl'] \
-              + " -O " + self.temp_dir + framefile
+
+        # Determine which camera to use for this frame
+        active_cam = self.get_active_camera()
+        if active_cam == 2 and self.config['snapshoturl2']:
+            snapshot_url = self.config['snapshoturl2']
+        else:
+            snapshot_url = self.config['snapshoturl']
+
+        cmd = "wget " + options + shlex.quote(snapshot_url) \
+              + " -O " + shlex.quote(self.temp_dir + framefile)
         self.lastframefile = framefile
-        logging.debug(f"cmd: {cmd}")
+        logging.debug(f"cmd: {cmd} (camera {active_cam})")
 
         shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
         scmd = shell_cmd.build_shell_command(cmd, None)
+        cmdstatus = False
         try:
             cmdstatus = await scmd.run(timeout=2., verbose=False)
         except Exception:
             logging.exception(f"Error running cmd '{cmd}'")
+
+        # Apply per-frame transform if dual_camera with different orientations
+        if cmdstatus and self.config['dual_camera'] \
+                and self.config['snapshoturl2']:
+            await self.apply_frame_transform(framefile, active_cam)
 
         result = {'action': 'newframe'}
         if cmdstatus:
             result.update({
                 'frame': str(self.framecount),
                 'framefile': framefile,
-                'status': 'success'
+                'status': 'success',
+                'camera': active_cam
             })
         else:
             logging.info(f"getting newframe failed: {cmd}")
@@ -543,6 +703,7 @@ class Timelapse:
                 os.remove(filepath)
         self.framecount = 0
         self.lastframefile = ""
+        self.per_frame_transforms_applied = False
 
     def call_saveFramesZip(self) -> None:
         ioloop = IOLoop.current()
@@ -679,6 +840,15 @@ class Timelapse:
                 filterParam = " -vf 'hflip'"
             elif self.config['flip_y']:
                 filterParam = " -vf 'vflip'"
+
+            # Skip global transforms if per-frame transforms were applied
+            # (dual_camera mode with different camera orientations)
+            if self.per_frame_transforms_applied:
+                filterParam = ""
+                logging.info(
+                    "timelapse: skipping global rotation/flip "
+                    "(per-frame transforms applied in dual_camera mode)"
+                )
 
             # build shell command
             cmd = self.ffmpeg_binary_path \
