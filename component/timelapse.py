@@ -169,6 +169,23 @@ class Timelapse:
 
     async def component_init(self) -> None:
         await self.getWebcamConfig()
+        self.seed_framecount()
+
+    def seed_framecount(self) -> None:
+        # Resume numbering from what is already on disk. Without this a
+        # moonraker restart mid print resets the counter back to 0 and every
+        # frame captured so far gets overwritten, silently: the survivors are
+        # numbered contiguously from 1, so the rendered video simply starts
+        # part way through the print.
+        highest = 0
+        for filepath in glob.glob(self.temp_dir + "frame*.jpg"):
+            match = re.match(r"frame(\d+)\.jpg$", os.path.basename(filepath))
+            if match:
+                highest = max(highest, int(match.group(1)))
+
+        if highest:
+            logging.info(f"resuming timelapse frame numbering at {highest}")
+        self.framecount = highest
 
     def overwriteDbconfigWithConfighelper(self) -> None:
         blockedsettings = []
