@@ -93,6 +93,9 @@ use or render.
 
 #### camera
 This setting let you choose which camera should be used to take frames from.
+The value may be either the webcam's name or its uid; most frontends store the
+uid. Both are accepted, and if the value matches neither, the first available
+webcam is used and a note is written to the log.
 It depends on the 'webcam' namespace in the moonraker DB and uses the
 'snapshoturl', 'flipX' and 'flipY' associated whith selected camera. Alternatively you can configure
 'snapshoturl', 'flip_x' and 'flip_y' in the moonraker.conf if your frontend doesn't support the webcams 

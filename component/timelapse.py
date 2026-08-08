@@ -306,6 +306,8 @@ class TimelapseRenderService:
         result = {'action': 'render'}
 
         # make sure webcamconfig is uptodate for the rotation/flip feature
+        # reset the guard so an unresolved camera is explained once per render
+        self.owner.lastUnresolvedCam = None
         await self.owner.getWebcamConfig()
 
         if not filelist:
@@ -507,7 +509,10 @@ class TimelapseConfigService:
             f"blockedsettings {self.owner.config['blockedsettings']}")
 
     async def get_webcam_config(self) -> None:
-        webcam_name = self.owner.config['camera']
+        # 'camera' may hold either a webcam name or a webcam uid; the
+        # frontends write the uid. Try name first (pre-existing path),
+        # then uid, then fall back to the first webcam.
+        webcam_ref = self.owner.config['camera']
         try:
             wcmgr: WebcamManager = self.owner.server.lookup_component("webcam")
             cams = wcmgr.get_webcams()
@@ -523,16 +528,33 @@ class TimelapseConfigService:
                 self.parse_webcam_config(fallback)
                 return
 
-            if webcam_name and webcam_name in cams:
-                camera = cams[webcam_name]
-            else:
+            camera = None
+            if webcam_ref:
+                if webcam_ref in cams:
+                    camera = cams[webcam_ref]
+                else:
+                    try:
+                        camera = wcmgr.get_cam_by_uid(webcam_ref)
+                    except Exception:
+                        camera = None
+
+            if camera is None:
+                fallback_name = list(cams.keys())[0]
+                if webcam_ref and self.owner.lastUnresolvedCam != webcam_ref:
+                    self.owner.lastUnresolvedCam = webcam_ref
+                    logging.info(
+                        f"timelapse: camera '{webcam_ref}' matched no "
+                        f"webcam by name or uid; using '{fallback_name}'"
+                    )
                 camera = list(cams.values())[0]
+            else:
+                self.owner.lastUnresolvedCam = None
 
             self.parse_webcam_config(camera.as_dict())
 
         except Exception as e:
             logging.info(f"something went wrong getting"
-                         f"Cam Camera:{webcam_name} from Database. "
+                         f"Cam Camera:{webcam_ref} from Database. "
                          f"Exception: {e}"
                          )
 
@@ -674,6 +696,7 @@ class Timelapse:
         self.hyperlapserunning = False
         self.printing = False
         self.noWebcamDb = False
+        self.lastUnresolvedCam: Optional[str] = None
 
         self.confighelper = confighelper
         self.server = confighelper.get_server()

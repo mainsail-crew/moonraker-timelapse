@@ -227,6 +227,37 @@ class FakeServer:
         self.events.append(payload)
 
 
+class FakeWebCam:
+    def __init__(self, name, uid, snapshot_url, rotation):
+        self.name = name
+        self.uid = uid
+        self.snapshot_url = snapshot_url
+        self.rotation = rotation
+
+    def as_dict(self):
+        return {
+            "snapshot_url": self.snapshot_url,
+            "rotation": self.rotation,
+            "flip_horizontal": False,
+            "flip_vertical": False,
+        }
+
+
+class FakeWebcamManager:
+    def __init__(self, server, cams):
+        self.server = server
+        self.webcams = {cam.name: cam for cam in cams}
+
+    def get_webcams(self):
+        return self.webcams
+
+    def get_cam_by_uid(self, uid):
+        for cam in self.webcams.values():
+            if cam.uid == uid:
+                return cam
+        raise self.server.error(f"Webcam with UID {uid} not found", 404)
+
+
 async def ffmpeg_success_behavior(command, callback):
     mp4_match = re.search(r"'([^']+\.mp4)'", command)
     if mp4_match:
@@ -504,6 +535,71 @@ class TimelapseRegressionTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(self.timelapse.printing)
         self.assertEqual(calls["stop"], 1)
+
+    def _install_two_webcams(self):
+        first = FakeWebCam(
+            "front", "uid-front", "http://cam.local/front", 0
+        )
+        second = FakeWebCam(
+            "chassis", "uid-chassis", "http://cam.local/chassis", 90
+        )
+        self.server.webcam_manager = FakeWebcamManager(
+            self.server, [first, second]
+        )
+        return first, second
+
+    async def test_webcam_config_resolves_by_name(self):
+        _first, second = self._install_two_webcams()
+        self.timelapse.config["camera"] = second.name
+
+        await self.timelapse.getWebcamConfig()
+
+        self.assertEqual(
+            self.timelapse.config["snapshoturl"], second.snapshot_url
+        )
+        self.assertEqual(self.timelapse.config["rotation"], second.rotation)
+
+    async def test_webcam_config_resolves_by_uid(self):
+        _first, second = self._install_two_webcams()
+        self.timelapse.config["camera"] = second.uid
+
+        await self.timelapse.getWebcamConfig()
+
+        self.assertEqual(
+            self.timelapse.config["snapshoturl"], second.snapshot_url
+        )
+        self.assertEqual(self.timelapse.config["rotation"], second.rotation)
+
+    async def test_webcam_config_unmatched_falls_back_and_logs_once(self):
+        first, _second = self._install_two_webcams()
+        self.timelapse.config["camera"] = "nonexistent"
+
+        with self.assertLogs(level="INFO") as captured:
+            await self.timelapse.getWebcamConfig()
+
+        self.assertEqual(
+            self.timelapse.config["snapshoturl"], first.snapshot_url
+        )
+        matches = [
+            line for line in captured.output if "matched no" in line
+        ]
+        self.assertEqual(len(matches), 1)
+        self.assertIn("nonexistent", matches[0])
+        self.assertIn(first.name, matches[0])
+
+    async def test_webcam_config_unmatched_repeat_logs_once_total(self):
+        self._install_two_webcams()
+        self.timelapse.config["camera"] = "nonexistent"
+
+        with self.assertLogs(level="INFO") as captured:
+            await self.timelapse.getWebcamConfig()
+            await self.timelapse.getWebcamConfig()
+            await self.timelapse.getWebcamConfig()
+
+        matches = [
+            line for line in captured.output if "matched no" in line
+        ]
+        self.assertEqual(len(matches), 1)
 
 
 if __name__ == "__main__":
