@@ -606,6 +606,11 @@ class TimelapseConfigService:
                         logging.debug(
                             "snapshoturl cannot be changed via webrequest")
                         continue
+                    elif setting in self.owner.config['blockedsettings']:
+                        logging.debug(
+                            f"timelapse: {setting} is set in moonraker.conf "
+                            f"and cannot be changed via webrequest")
+                        continue
                     elif settingtype == str:
                         settingvalue = webrequest.get(setting)
                     elif settingtype == bool:
@@ -614,6 +619,13 @@ class TimelapseConfigService:
                         settingvalue = webrequest.get_int(setting)
                     elif settingtype == float:
                         settingvalue = webrequest.get_float(setting)
+                    else:
+                        # would otherwise fall through holding the previous
+                        # key's value, or unbound if it came first
+                        logging.debug(
+                            f"timelapse: ignoring {setting}, no conversion "
+                            f"for {settingtype}")
+                        continue
 
                     self.owner.config[setting] = settingvalue
 
