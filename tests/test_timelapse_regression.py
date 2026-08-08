@@ -268,6 +268,16 @@ class TimelapseRegressionTests(unittest.IsolatedAsyncioTestCase):
             with open(path, "wb") as handle:
                 handle.write(b"jpg")
 
+    def _make_pinned_timelapse(self, **pinned):
+        values = dict(self.config_values)
+        values.update(pinned)
+        confighelper = FakeConfigHelper(
+            self.server, values, options=list(pinned)
+        )
+        timelapse = Timelapse(confighelper)
+        self.server.database.insert_calls.clear()
+        return timelapse
+
     async def test_newframe_success_emits_event(self):
         self.server.shell_factory.push_behavior(True)
 
@@ -450,6 +460,58 @@ class TimelapseRegressionTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result["snapshoturl"], original_url)
         self.assertEqual(self.server.database.insert_calls, [])
+
+    async def test_settings_rejects_blocked_config_keys(self):
+        timelapse = self._make_pinned_timelapse(autorender=True)
+        self.assertIn("autorender", timelapse.config["blockedsettings"])
+        request = FakeWebRequest("POST", {"autorender": False})
+
+        result = await timelapse.webrequest_settings(request)
+
+        self.assertTrue(result["autorender"])
+        self.assertEqual(self.server.database.insert_calls, [])
+
+    async def test_settings_applies_free_key_alongside_blocked_key(self):
+        timelapse = self._make_pinned_timelapse(autorender=True)
+        request = FakeWebRequest("POST", {
+            "autorender": False,
+            "park_time": 0.75,
+        })
+
+        with patch("component.timelapse.IOLoop", FakeIOLoopClass):
+            result = await timelapse.webrequest_settings(request)
+
+        self.assertTrue(result["autorender"])
+        self.assertEqual(result["park_time"], 0.75)
+        inserted_keys = [
+            entry[1] for entry in self.server.database.insert_calls
+        ]
+        self.assertNotIn("config.autorender", inserted_keys)
+        self.assertIn("config.park_time", inserted_keys)
+
+    async def test_settings_declines_blockedsettings_key(self):
+        timelapse = self._make_pinned_timelapse(autorender=True)
+        request = FakeWebRequest("POST", {
+            "blockedsettings": ["nonsense"],
+        })
+
+        result = await timelapse.webrequest_settings(request)
+
+        self.assertEqual(result["blockedsettings"], ["autorender"])
+        self.assertEqual(self.server.database.insert_calls, [])
+
+    async def test_settings_declines_blockedsettings_key_first(self):
+        timelapse = self._make_pinned_timelapse(autorender=True)
+        request = FakeWebRequest("POST", {
+            "blockedsettings": [],
+            "park_time": 0.3,
+        })
+
+        with patch("component.timelapse.IOLoop", FakeIOLoopClass):
+            result = await timelapse.webrequest_settings(request)
+
+        self.assertEqual(result["blockedsettings"], ["autorender"])
+        self.assertEqual(result["park_time"], 0.3)
 
     async def test_file_selected_cleans_frames(self):
         self._write_frames(2)
