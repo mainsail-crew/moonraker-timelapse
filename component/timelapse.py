@@ -70,6 +70,7 @@ class Timelapse:
             'enabled': True,
             'mode': "layermacro",
             'camera': "",
+            'gphoto2_camera_model': "",
             'snapshoturl': "http://localhost:8080/?action=snapshot",
             'stream_delay_compensation': 0.05,
             'gcode_verbose': False,
@@ -464,25 +465,48 @@ class Timelapse:
         # make sure webcamconfig is uptodate before grabbing a new frame
         await self.getWebcamConfig()
 
-        options = ""
-        if self.wget_skip_cert:
-            options += "--no-check-certificate "
-
         self.framecount += 1
         framefile = "frame" + str(self.framecount).zfill(6) + ".jpg"
-        cmd = "wget " + options + self.config['snapshoturl'] \
-              + " -O " + self.temp_dir + framefile
         self.lastframefile = framefile
-        logging.debug(f"cmd: {cmd}")
-
-        shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
-        scmd = shell_cmd.build_shell_command(cmd, None)
-        try:
-            cmdstatus = await scmd.run(timeout=2., verbose=False)
-        except Exception:
-            logging.exception(f"Error running cmd '{cmd}'")
 
         result = {'action': 'newframe'}
+        cmdstatus = False
+
+        # Route to appropriate camera handler
+        if self.config['gphoto2_camera_model'] != "":
+            framepath = os.path.join(self.temp_dir, framefile)
+            # Build gphoto2 command
+            # --camera selects which camera to use needs model from gphoto2 --auto-detect
+            # --capture-image-and-download folder/file captures and downloads in one operation
+            cmd = f"gphoto2 --camera '{self.config['gphoto2_camera_model']}' --capture-image-and-download --filename '{framepath}'"
+            logging.debug(f"Executing gphoto2 command: {cmd}")
+
+            shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
+            scmd = shell_cmd.build_shell_command(cmd, None)
+
+            try:
+                cmdstatus = await scmd.run(timeout=5., verbose=False)
+            except Exception:
+                logging.exception(f"Error executing gphoto2 command: {cmd}")
+
+        else:
+            # Default webcam capture via wget
+            options = ""
+            if self.wget_skip_cert:
+                options += "--no-check-certificate "
+
+            cmd = "wget " + options + self.config['snapshoturl'] \
+                  + " -O " + self.temp_dir + framefile
+            logging.debug(f"cmd: {cmd}")
+
+            shell_cmd: SCMDComp = self.server.lookup_component('shell_command')
+            scmd = shell_cmd.build_shell_command(cmd, None)
+            try:
+                cmdstatus = await scmd.run(timeout=2., verbose=False)
+            except Exception:
+                logging.exception(f"Error running cmd '{cmd}'")
+
+        # Process result
         if cmdstatus:
             result.update({
                 'frame': str(self.framecount),

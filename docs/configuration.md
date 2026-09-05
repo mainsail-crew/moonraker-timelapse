@@ -240,6 +240,7 @@ does.
 #previewimage: True
 #saveframes: False
 #wget_skip_cert_check: False
+#gphoto2_camera_model: Nikon DSC D40 (PTP mode)
 
 ```
 
@@ -268,3 +269,43 @@ To get that change at every klipper start:
 initial_duration: 1
 gcode: SET_GCODE_VARIABLE MACRO=TIMELAPSE_TAKE_FRAME VARIABLE=check_time VALUE=0.5 
 ``` 
+# gphoto2 Configuration
+
+## Connect Your Camera
+
+1. Connect camera via USB
+2. Enable PTP/USB mode on camera (varies by model)
+3. Verify detection:
+
+```bash
+gphoto2 --auto-detect
+```
+
+You should see your camera listed:
+
+```bash
+Model                          Port
+----------------------------------------------------------
+Nikon DSC D40 (PTP mode)       usb:003,004
+```
+
+## Update Configuration
+
+Add a dummy webcam and give it a stream and snapshot URL that is not in use.
+Select that Camara in the timelaps menue.
+Set the Stream Delay Compensation to the amount of time it takes to focus and take a picture (setting it to manual focus decreases the time taken)
+
+Edit `moonraker.conf`:
+
+```ini
+[timelapse]
+gphoto2_camera_model = Nikon DSC D40 (PTP mode)
+```
+
+## Camera "Device busy"
+
+```bash
+# Kill any process using camera
+killall gvfs-gphoto2-volume-monitor
+killall gphoto2
+```
